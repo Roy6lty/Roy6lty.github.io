@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roy6lty - Developer Portfolio</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-buttons">
+                <div class="button close"></div>
+                <div class="button minimize"></div>
+                <div class="button maximize"></div>
+            </div>
+            <div class="terminal-title">roy6lty@portfolio ~ %</div>
+        </div>
+        
+        <nav class="nav-tabs">
+            <button class="nav-btn active" onclick="showSection('home')">HOME</button>
+            <button class="nav-btn" onclick="showSection('projects')">PROJECTS</button>
+            <button class="nav-btn" onclick="showSection('about')">ABOUT ME</button>
+            <button class="nav-btn" onclick="showSection('contact')">CONTACT</button>
+        </nav>
+
+        <div class="terminal-content">
+            <!-- HOME SECTION -->
+            <section id="home" class="content-section active">
+                <div class="typing-text">
+                    <p>$ Welcome to my portfolio</p>
+                    <p class="delay-1">$ Initializing developer profile...</p>
+                    <p class="delay-2">$ <span class="success">✓ Connection established</span></p>
+                    <br>
+                    <p class="intro-text">
+                        Hi, I'm <span class="highlight">Roy6lty</span> 👨‍💻<br>
+                        A passionate developer with an enthusiasm for learning and building awesome projects.
+                    </p>
+                    <br>
+                    <p class="tagline">$ cat interests.txt</p>
+                    <div class="interests-box">
+                        <p>→ Full-stack development</p>
+                        <p>→ Problem solving</p>
+                        <p>→ Continuous learning</p>
+                        <p>→ Open source contribution</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PROJECTS SECTION -->
+            <section id="projects" class="content-section">
+                <p class="command">$ ls projects/</p>
+                <div class="projects-container">
+                    <div class="project-item">
+                        <h3>Project 1</h3>
+                        <p class="tech-stack">Technologies: JavaScript, React, Node.js</p>
+                        <p class="description">Description of your first project</p>
+                        <p class="links"><a href="#">GitHub</a> | <a href="#">Live Demo</a></p>
+                    </div>
+                    <div class="project-item">
+                        <h3>Project 2</h3>
+                        <p class="tech-stack">Technologies: Python, Django, PostgreSQL</p>
+                        <p class="description">Description of your second project</p>
+                        <p class="links"><a href="#">GitHub</a> | <a href="#">Live Demo</a></p>
+                    </div>
+                    <div class="project-item">
+                        <h3>Project 3</h3>
+                        <p class="tech-stack">Technologies: Vue.js, Firebase</p>
+                        <p class="description">Description of your third project</p>
+                        <p class="links"><a href="#">GitHub</a> | <a href="#">Live Demo</a></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABOUT SECTION -->
+            <section id="about" class="content-section">
+                <p class="command">$ cat about_me.md</p>
+                <div class="about-content">
+                    <h2>About Me</h2>
+                    <p>I'm a passionate developer who loves learning new technologies and solving complex problems. With a deep enthusiasm for coding and continuous improvement, I'm always exploring new ways to build better applications.</p>
+                    
+                    <h3>Languages & Skills</h3>
+                    <div class="skills-grid">
+                        <div class="skill">
+                            <span class="skill-name">JavaScript</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 90%;"></div></div>
+                        </div>
+                        <div class="skill">
+                            <span class="skill-name">Python</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 85%;"></div></div>
+                        </div>
+                        <div class="skill">
+                            <span class="skill-name">React</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 80%;"></div></div>
+                        </div>
+                        <div class="skill">
+                            <span class="skill-name">Node.js</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 85%;"></div></div>
+                        </div>
+                        <div class="skill">
+                            <span class="skill-name">HTML/CSS</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 95%;"></div></div>
+                        </div>
+                        <div class="skill">
+                            <span class="skill-name">Git</span>
+                            <div class="skill-bar"><div class="skill-fill" style="width: 90%;"></div></div>
+                        </div>
+                    </div>
+
+                    <h3>My Enthusiasm</h3>
+                    <p>I have a genuine love for learning and am constantly expanding my knowledge. Whether it's:
+                    <ul>
+                        <li>🚀 Exploring emerging technologies</li>
+                        <li>📚 Reading documentation and best practices</li>
+                        <li>💡 Tackling challenging problems</li>
+                        <li>🤝 Contributing to open source</li>
+                        <li>🎓 Mentoring other developers</li>
+                    </ul>
+                    </p>
+                </div>
+            </section>
+
+            <!-- CONTACT SECTION -->
+            <section id="contact" class="content-section">
+                <p class="command">$ cat contact.txt</p>
+                <div class="contact-content">
+                    <p class="contact-text">Get in touch with me:</p>
+                    <div class="contact-item">
+                        <span class="contact-label">📧 Email:</span>
+                        <a href="mailto:your.email@example.com">your.email@example.com</a>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-label">💼 GitHub:</span>
+                        <a href="https://github.com/Roy6lty" target="_blank">github.com/Roy6lty</a>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-label">🔗 LinkedIn:</span>
+                        <a href="#">Your LinkedIn Profile</a>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-label">🐦 Twitter:</span>
+                        <a href="#">@your_handle</a>
+                    </div>
+                    <br>
+                    <p class="contact-footer">Feel free to reach out! I'm always open to discussing new projects, creative ideas, or opportunities to be part of your vision.</p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
