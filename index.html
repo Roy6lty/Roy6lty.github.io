@@ -1,153 +1,94 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roy6lty - Developer Portfolio</title>
+    <meta name="description" content="Ayo Olowoleru is a developer who builds clear, thoughtful web experiences.">
+    <meta name="theme-color" content="#f5f3ee">
+    <link rel="canonical" href="https://roy6lty.github.io/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Ayo Olowoleru | Backend &amp; Systems Developer">
+    <meta property="og:description" content="Backend systems, AI engineering, cloud infrastructure, and useful digital products.">
+    <meta property="og:url" content="https://roy6lty.github.io/">
+    <title>Ayo Olowoleru | Web Developer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"Ayo Olowoleru","jobTitle":"Backend and Systems Developer","url":"https://roy6lty.github.io/","email":"olowoleru06@gmail.com","sameAs":["https://github.com/Roy6lty","https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/"],"knowsAbout":["Python","Go","Golang","TypeScript","AI engineering","Backend development","AWS","GCP","DigitalOcean","Docker","Kubernetes","Terraform","Ansible","Networking"]}</script>
 </head>
-<body>
-    <div class="terminal">
-        <div class="terminal-header">
-            <div class="terminal-buttons">
-                <div class="button close"></div>
-                <div class="button minimize"></div>
-                <div class="button maximize"></div>
-            </div>
-            <div class="terminal-title">roy6lty@portfolio ~ %</div>
-        </div>
-        
-        <nav class="nav-tabs">
-            <button class="nav-btn active" onclick="showSection('home')">HOME</button>
-            <button class="nav-btn" onclick="showSection('projects')">PROJECTS</button>
-            <button class="nav-btn" onclick="showSection('about')">ABOUT ME</button>
-            <button class="nav-btn" onclick="showSection('contact')">CONTACT</button>
-        </nav>
+<body class="page-home">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="cosmic-layer" aria-hidden="true"><span class="ambient-star star-one"></span><span class="ambient-star star-two"></span><span class="ambient-star star-three"></span><span class="ambient-star star-four"></span><span class="shooting-star"></span></div>
+    <div class="site-frame">
+        <header class="site-header">
+            <a class="brand" href="index.html" aria-label="Ayo Olowoleru home">
+                <span class="brand-mark">AO</span>
+                <span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems developer</small></span>
+            </a>
+            <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav"><span>Menu</span><i></i></button>
+            <nav class="primary-nav" id="primary-nav" aria-label="Primary navigation">
+                <a class="active" aria-current="page" href="index.html">Home</a>
+                <a href="about.html">About</a>
+                <a href="projects.html">Projects</a>
+                <a href="contact.html">Contact</a>
+                <a class="nav-cta" href="contact.html">Let's talk <span aria-hidden="true">&#8599;</span></a>
+            </nav>
+        </header>
 
-        <div class="terminal-content">
-            <!-- HOME SECTION -->
-            <section id="home" class="content-section active">
-                <div class="typing-text">
-                    <p>$ Welcome to my portfolio</p>
-                    <p class="delay-1">$ Initializing developer profile...</p>
-                    <p class="delay-2">$ <span class="success">✓ Connection established</span></p>
-                    <br>
-                    <p class="intro-text">
-                        Hi, I'm <span class="highlight">Roy6lty</span> 👨‍💻<br>
-                        A passionate developer with an enthusiasm for learning and building awesome projects.
-                    </p>
-                    <br>
-                    <p class="tagline">$ cat interests.txt</p>
-                    <div class="interests-box">
-                        <p>→ Full-stack development</p>
-                        <p>→ Problem solving</p>
-                        <p>→ Continuous learning</p>
-                        <p>→ Open source contribution</p>
-                    </div>
+        <main id="main-content">
+            <section class="hero section-pad">
+                <div class="hero-copy" data-reveal>
+                    <p class="eyebrow"><span class="status-dot"></span> Open to thoughtful collaborations</p>
+                    <h1>Building the web with <em>clarity.</em></h1>
+                    <p class="hero-lede">I'm Ayo, a developer who builds dependable backends, integrates AI into products, and creates clear web experiences.</p>
+                    <div class="hero-actions"><a class="button button-primary" href="projects.html">See my work <span aria-hidden="true">&#8599;</span></a><a class="button button-secondary" href="about.html">More about me</a></div>
+                    <p class="hero-note"><span>01</span> AI engineering / backend systems / cloud infrastructure</p>
+                </div>
+                <div class="hero-visual" data-reveal data-delay="1" aria-label="Ayo's developer profile">
+                    <div class="visual-topline"><span>PROFILE / 01</span><span class="visual-signal"></span></div>
+                    <div class="visual-lines" aria-hidden="true"><span></span><span></span><span></span></div>
+                    <p class="visual-kicker">The short version</p>
+                    <h2>A developer who notices the details.</h2>
+                    <p class="visual-body">From the first layout to the last interaction, I care about making digital products feel considered and useful.</p>
+                    <div class="visual-tags"><span>Python</span><span>Go</span><span>TypeScript</span></div>
+                    <div class="visual-footer"><span>Currently learning</span><strong>More, every day.</strong></div>
                 </div>
             </section>
 
-            <!-- PROJECTS SECTION -->
-            <section id="projects" class="content-section">
-                <p class="command">$ ls projects/</p>
-                <div class="projects-container">
-                    <div class="project-item">
-                        <h3>Project 1</h3>
-                        <p class="tech-stack">Technologies: JavaScript, React, Node.js</p>
-                        <p class="description">Description of your first project</p>
-                        <p class="links"><a href="#">GitHub</a> | <a href="#">Live Demo</a></p>
-                    </div>
-                    <div class="project-item">
-                        <h3>Project 2</h3>
-                        <p class="tech-stack">Technologies: Python, Django, PostgreSQL</p>
-                        <p class="description">Description of your second project</p>
-                        <p class="links"><a href="#">GitHub</a> | <a href="#">Live Demo</a></p>
-                    </div>
-                    <div class="project-item">
-                        <h3>Project 3</h3>
-                        <p class="tech-stack">Technologies: Vue.js, Firebase</p>
-                        <p class="description">Description of your third project</p>
-                        <p class="links"><a href="#">GitHub</a> | <a href="#">Live Demo</a></p>
-                    </div>
+            <section class="proof-strip section-pad" aria-label="Portfolio highlights" data-reveal>
+                <div class="proof-item"><strong>03</strong><span>Products built<br>for real problems</span></div>
+                <div class="proof-item"><strong>03</strong><span>Cloud platforms<br>used in practice</span></div>
+                <div class="proof-item"><strong>24/7</strong><span>Systems mindset<br>for dependable work</span></div>
+                <p class="proof-statement">Good systems are equal parts<br><em>performance and trust.</em></p>
+            </section>
+
+            <section class="work-section section-pad" data-reveal>
+                <div class="section-heading"><div><p class="eyebrow">Selected product work</p><h2>Systems that do useful work.</h2></div><a class="text-link" href="projects.html">View all projects <span aria-hidden="true">&#8599;</span></a></div>
+                <div class="project-grid project-grid-home">
+                    <article class="project-card image-project-card">
+                        <a class="project-preview" href="https://examcompanion.com" target="_blank" rel="noreferrer"><img src="assets/examcompanion-home.png" alt="ExamCompanion app dashboard" loading="lazy"><span>Open product <b aria-hidden="true">&#8599;</b></span></a>
+                        <div class="project-info"><div class="project-meta"><span>AI product</span><span>01 / 03</span></div><h3>ExamCompanion</h3><p>Built the AI integration and entire backend for an AI study and testing assistant, with authentication hardening, Google OAuth, and CI/CD deployment.</p><a class="text-link" href="https://examcompanion.com" target="_blank" rel="noreferrer">Visit examcompanion.com <span aria-hidden="true">&#8599;</span></a></div>
+                    </article>
+                    <article class="project-card image-project-card">
+                        <a class="project-preview" href="https://eventtally.com" target="_blank" rel="noreferrer"><img src="assets/eventtally-preview.png" alt="EventTally event and vendor platform preview" loading="lazy"><span>Open product <b aria-hidden="true">&#8599;</b></span></a>
+                        <div class="project-info"><div class="project-meta"><span>Ticketing platform</span><span>02 / 03</span></div><h3>EventTally</h3><p>Built backend services for event and ticket workflows, including ticket reservations, Stripe payments, and QR-coded ticket delivery, with protected authentication, Google OAuth, and CI/CD deployment.</p><a class="text-link" href="https://eventtally.com" target="_blank" rel="noreferrer">Visit eventtally.com <span aria-hidden="true">&#8599;</span></a></div>
+                    </article>
+                    <article class="project-card image-project-card">
+                        <a class="project-preview" href="https://poplocal.co" target="_blank" rel="noreferrer"><img src="assets/poplocal-preview.png" alt="PopLocal creator campaign preview" loading="lazy"><span>Open product <b aria-hidden="true">&#8599;</b></span></a>
+                        <div class="project-info"><div class="project-meta"><span>Creator platform</span><span>03 / 03</span></div><h3>PopLocal</h3><p>Built the backend with Supabase for a managed local creator-campaign platform.</p><a class="text-link" href="https://poplocal.co" target="_blank" rel="noreferrer">Visit poplocal.co <span aria-hidden="true">&#8599;</span></a></div>
+                    </article>
                 </div>
             </section>
 
-            <!-- ABOUT SECTION -->
-            <section id="about" class="content-section">
-                <p class="command">$ cat about_me.md</p>
-                <div class="about-content">
-                    <h2>About Me</h2>
-                    <p>I'm a passionate developer who loves learning new technologies and solving complex problems. With a deep enthusiasm for coding and continuous improvement, I'm always exploring new ways to build better applications.</p>
-                    
-                    <h3>Languages & Skills</h3>
-                    <div class="skills-grid">
-                        <div class="skill">
-                            <span class="skill-name">JavaScript</span>
-                            <div class="skill-bar"><div class="skill-fill" style="width: 90%;"></div></div>
-                        </div>
-                        <div class="skill">
-                            <span class="skill-name">Python</span>
-                            <div class="skill-bar"><div class="skill-fill" style="width: 85%;"></div></div>
-                        </div>
-                        <div class="skill">
-                            <span class="skill-name">React</span>
-                            <div class="skill-bar"><div class="skill-fill" style="width: 80%;"></div></div>
-                        </div>
-                        <div class="skill">
-                            <span class="skill-name">Node.js</span>
-                            <div class="skill-bar"><div class="skill-fill" style="width: 85%;"></div></div>
-                        </div>
-                        <div class="skill">
-                            <span class="skill-name">HTML/CSS</span>
-                            <div class="skill-bar"><div class="skill-fill" style="width: 95%;"></div></div>
-                        </div>
-                        <div class="skill">
-                            <span class="skill-name">Git</span>
-                            <div class="skill-bar"><div class="skill-fill" style="width: 90%;"></div></div>
-                        </div>
-                    </div>
-
-                    <h3>My Enthusiasm</h3>
-                    <p>I have a genuine love for learning and am constantly expanding my knowledge. Whether it's:
-                    <ul>
-                        <li>🚀 Exploring emerging technologies</li>
-                        <li>📚 Reading documentation and best practices</li>
-                        <li>💡 Tackling challenging problems</li>
-                        <li>🤝 Contributing to open source</li>
-                        <li>🎓 Mentoring other developers</li>
-                    </ul>
-                    </p>
-                </div>
+            <section class="home-bottom section-pad" data-reveal>
+                <div class="statement-card"><p class="eyebrow">What I bring</p><h2>Curious mind.<br><em>Systems builder.</em></h2><a class="button button-light" href="about.html">See my toolkit <span aria-hidden="true">&#8599;</span></a></div>
+                <div class="capability-list"><div><span>01</span><h3>AI product engineering</h3><p>Integrating AI capabilities into products in ways that are useful, focused, and dependable.</p></div><div><span>02</span><h3>Backend systems</h3><p>Designing APIs, data flows, and services that keep products reliable as they grow.</p></div><div><span>03</span><h3>Cloud and infrastructure</h3><p>Comfortable with the tools and platforms that help systems stay observable, scalable, and resilient.</p></div></div>
             </section>
+        </main>
 
-            <!-- CONTACT SECTION -->
-            <section id="contact" class="content-section">
-                <p class="command">$ cat contact.txt</p>
-                <div class="contact-content">
-                    <p class="contact-text">Get in touch with me:</p>
-                    <div class="contact-item">
-                        <span class="contact-label">📧 Email:</span>
-                        <a href="mailto:your.email@example.com">your.email@example.com</a>
-                    </div>
-                    <div class="contact-item">
-                        <span class="contact-label">💼 GitHub:</span>
-                        <a href="https://github.com/Roy6lty" target="_blank">github.com/Roy6lty</a>
-                    </div>
-                    <div class="contact-item">
-                        <span class="contact-label">🔗 LinkedIn:</span>
-                        <a href="#">Your LinkedIn Profile</a>
-                    </div>
-                    <div class="contact-item">
-                        <span class="contact-label">🐦 Twitter:</span>
-                        <a href="#">@your_handle</a>
-                    </div>
-                    <br>
-                    <p class="contact-footer">Feel free to reach out! I'm always open to discussing new projects, creative ideas, or opportunities to be part of your vision.</p>
-                </div>
-            </section>
-        </div>
+        <footer class="site-footer"><div><span class="footer-mark">AO</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><span class="footer-year">2026</span></div></footer>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>

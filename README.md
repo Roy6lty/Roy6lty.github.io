@@ -1,64 +1,50 @@
-# Roy6lty's Portfolio
+# Ayo Olowoleru's Portfolio
 
-A terminal-style portfolio website showcasing my projects, skills, and passion for development.
+A recruiter-friendly static portfolio for Ayo Olowoleru, built with semantic HTML, responsive CSS, and vanilla JavaScript. It is designed to deploy directly to GitHub Pages and highlights backend, AI integration, cloud, and systems work.
 
-## Features
+**Live site:** [roy6lty.github.io](https://roy6lty.github.io)
 
-- 🖥️ **Terminal Design**: Modern terminal-inspired interface with authentic hacker aesthetic
-- 📱 **Responsive**: Fully responsive design that works on all devices
-- 🎨 **Interactive Tabs**: Easy navigation between Home, Projects, About, and Contact sections
-- ✨ **Smooth Animations**: Elegant transitions and visual effects
-- 🌐 **GitHub Pages**: Hosted directly on GitHub Pages
+**Profile:** [github.com/Roy6lty](https://github.com/Roy6lty) | [LinkedIn](https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/)
 
-## Sections
+## Pages
 
-### Home
-Introduction and quick overview of who I am as a developer.
+- `index.html` - Home and portfolio overview
+- `about.html` - Background, toolkit, and working principles
+- `projects.html` - ExamCompanion, EventTally, PopLocal, and live GitHub repository archive
+- `contact.html` - Email, LinkedIn, and GitHub contact links
+- `STYLE_GUIDE.md` - Design, content, accessibility, and privacy rules for future updates
+- `SITEMAP.md` - Human-readable page and content map
+- `sitemap.xml` - Canonical public URLs for search engines
 
-### Projects
-Showcase of my projects with links to GitHub repositories and live demos.
-
-### About Me
-Detailed information about my skills, programming languages, and my enthusiasm for learning.
-
-### Contact
-Multiple ways to reach me - email, GitHub, LinkedIn, and social media.
-
-## Technologies Used
+## Technologies
 
 - HTML5
-- CSS3 (with CSS Grid and Flexbox)
-- Vanilla JavaScript
+- CSS3 with Grid, Flexbox, and responsive breakpoints
+- Vanilla JavaScript for navigation, reveal effects, and GitHub repository loading
 - GitHub Pages
 
-## Getting Started
+## Featured work
 
-This portfolio is hosted at `https://roy6lty.github.io`
+- ExamCompanion - AI study and testing product with document ingestion, AssemblyAI audio transcription, YouTube-subtitle ingestion, PostgreSQL/pgvector retrieval, and Gemini/LangChain generation. AI integration and entire backend built by Ayo, including JWT/OAuth authentication with email verification, 2FA, protected study workflows, and Google OAuth. GitHub Actions CI/CD reduced deployment time by 13% while supporting 99.99% uptime.
+- EventTally - Event and ticketing platform with vendor discovery, organizer workflows, Stripe ticket payments, and QR-coded tickets. Go backend and payment integration by Ayo, including JWT authentication, Google OAuth, and protected account flows. GitHub Actions CI/CD reduced deployment time by 13% while supporting 99.99% uptime.
+- PopLocal - Managed creator-campaign platform. Backend built with Supabase by Ayo.
 
-## Customization
+The product links open the live sites. Their preview images are stored locally in `assets/` so the portfolio remains reliable on GitHub Pages.
 
-To customize this portfolio:
+## Local preview
 
-1. Edit `index.html` to update content
-2. Modify `styles.css` for colors and styling
-3. Update `script.js` for additional functionality
-4. Replace placeholder links with your actual projects and contact info
+Because the project is static, it can be previewed with any local web server. For example:
 
-## Installation
+```bash
+python3 -m http.server
+```
 
-1. Clone this repository
-2. Make your changes
-3. Push to GitHub
-4. Your site will be live at `https://yourusername.github.io`
+Then open `http://localhost:8000` in a browser.
 
-## Future Enhancements
+## Content updates
 
-- Add more projects
-- Integrate with GitHub API to display live project data
-- Add dark/light mode toggle
-- Implement contact form
-- Add blog section
-
----
-
-Made with ❤️ by Roy6lty
+- Add or edit project details in `projects.html`.
+- Update the technology tags and biography in `about.html`.
+- Update the contact links in `contact.html` and the shared footer in each page.
+- Replace the preview files in `assets/` when updated product screenshots are available.
+- The projects page reads public repositories from the `Roy6lty` GitHub profile and falls back to a profile link if the API is unavailable.
