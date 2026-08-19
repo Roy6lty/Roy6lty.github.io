@@ -6,15 +6,16 @@ The portfolio is a static GitHub Pages site. Page navigation is repeated in each
 
 | Page | URL | Purpose | Main content |
 | --- | --- | --- | --- |
-| Home | `/index.html` | First impression and overview | Introduction, capabilities, featured projects |
-| About | `/about.html` | Background and working approach | Story, toolkit, principles, collaboration fit |
-| Projects | `/projects.html` | Detailed project evidence | ExamCompanion, EventTally, PopLocal, architecture notes, GitHub archive |
+| Home | `/index.html` | First impression and overview | Identity, offer, product evidence, and current networking lab |
+| About | `/about.html` | Background and working approach | Who Ayo is, why DevOps, tools, principles, collaboration fit |
+| Projects | `/projects.html` | Detailed project evidence | Products, Series networking labs, load-testing platform, AWS target diagram, GitHub archive |
+| Series | `/series.html` | Infrastructure learning record | Series introduction, current Docker topology, and planned networking and operations entries |
 | Contact | `/contact.html` | Contact routes | Email, LinkedIn, GitHub |
 
 ## Shared Assets
 
 - `styles.css` contains design tokens, layout, components, responsive rules, and animations.
-- `script.js` handles mobile navigation, reveal effects, scroll effects, and public GitHub repository loading.
+- `script.js` handles mobile navigation, reveal effects, scroll state, GitHub repository loading, and the two Three.js concept views.
 - `assets/examcompanion-home.png` is the ExamCompanion preview.
 - `assets/eventtally-preview.png` is the EventTally preview.
 - `assets/poplocal-preview.png` is the PopLocal preview.

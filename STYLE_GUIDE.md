@@ -4,7 +4,7 @@ This document is the working reference for extending the static portfolio withou
 
 ## Direction
 
-The site uses an editorial systems aesthetic: warm paper, structured grids, strong typography, and small technical labels. New sections should feel considered and direct rather than decorative for its own sake.
+The site uses a systems editorial aesthetic: an off-white grid, dark instrument panels, strong typography, and small technical labels. New sections should feel considered and direct rather than decorative for its own sake.
 
 Keep the focus on backend engineering, AI integration, cloud infrastructure, and useful product work.
 
@@ -14,16 +14,15 @@ The source of truth for tokens is `styles.css` under `:root`.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--ink` | `#15213b` | Primary text and dark surfaces |
-| `--ink-soft` | `#536078` | Supporting text |
-| `--paper` | `#f5f3ee` | Page background |
-| `--paper-deep` | `#ebe8df` | Secondary backgrounds |
-| `--white` | `#fffdf9` | Cards and light text |
-| `--coral` | `#ee7151` | Primary accent and actions |
-| `--coral-dark` | `#c9543a` | Hover states and labels |
-| `--gold` | `#e7b454` | Secondary accent |
-| `--mint` | `#cbdcd0` | Supporting accent |
-| `--line` | `rgba(21, 33, 59, 0.15)` | Borders and dividers |
+| `--ink` | `#101515` | Primary text and dark surfaces |
+| `--ink-soft` | `#56615d` | Supporting text |
+| `--paper` | `#edf0e8` | Page background |
+| `--paper-deep` | `#dfe5dc` | Secondary backgrounds |
+| `--white` | `#f9fbf4` | Cards and light text |
+| `--lime` | `#d9ff55` | Primary accent and active states |
+| `--orange` | `#ff795d` | Actions and labels |
+| `--blue` | `#a9c8ff` | Network database tier |
+| `--line` | `rgba(16, 21, 21, .16)` | Borders and dividers |
 
 Do not introduce one-off colors unless a new visual system genuinely needs one. Prefer existing tokens and CSS variables.
 
