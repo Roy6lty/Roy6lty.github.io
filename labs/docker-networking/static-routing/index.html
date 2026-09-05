@@ -1,0 +1,914 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Identify missing remote routes, choose a valid local next hop, inspect route selection, and distinguish forward from return paths. Teach client containers…"><meta name="theme-color" content="#101515"><title>Static Routing Between Docker Networks — Hands-on Lab | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/static-routing/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="Static Routing Between Docker Networks — Hands-on Lab | Ayo Olowoleru"><meta property="og:description" content="Identify missing remote routes, choose a valid local next hop, inspect route selection, and distinguish forward from return paths. Teach client containers…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/static-routing/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"Static Routing","item":"https://ayo-olowoleru.xyz/labs/docker-networking/static-routing/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Static Routing Between Docker Networks — Hands-on Lab","description":"Identify missing remote routes, choose a valid local next hop, inspect route selection, and distinguish forward from return paths. Teach client containers…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/static-routing/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["static route","next hop","forward path","return path"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>ROUTING FABRIC</span><span>Chapter 06</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/06-static-routing/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 06 / ROUTING FABRIC</span><h1>Static Routing<br><em>Teach client containers which local router address to use when a destination lives on a remote subnet.</em></h1><p>Identify missing remote routes, choose a valid local next hop, inspect route selection, and distinguish forward from return paths.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>06<small>/ 17</small></strong><p>Routing is a two-way contract: the request path and the return path must both exist.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>06 / 17</span></div><div class="chapter-rail-progress"><span style="width:35.3%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link is-current" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/06-static-routing/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 06 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Adds runtime routes to the six diagnostic containers through lab-router. The optional 05B chain remains a separate lab.</p></div><div><span>Lab state</span><p>6 subnets / multi-homed router / endpoint static routes and return routes</p><div class="chapter-tags"><span>static route</span><span>next hop</span><span>forward path</span><span>return path</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>Routing is a two-way contract: the request path and the return path must both exist.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/06-static-routing/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-06.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-06.svg" alt="Static Routing topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Observe the chapter 05 baseline</h3><p>Start the router topology and inspect app-a-test before adding remote routes.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 05 up -d --build</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 05 up -d --build">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 05 exec app-a-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 05 exec app-a-test ip route">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 05 exec app-a-test ip route get 10.10.12.10</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 05 exec app-a-test ip route get 10.10.12.10">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Test the missing path</h3><p>A lab-router exists, but app-a-test still uses Docker default routing. Confirm the expected failure.</p><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 05 exec app-a-test ping -c 2 10.10.12.10</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 05 exec app-a-test ping -c 2 10.10.12.10">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Apply and inspect the overlay</h3><p>Start chapter 06 and verify the route uses the router address on app_a.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 06 up -d --build</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 06 up -d --build">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 06 exec app-a-test ip route get 10.10.12.10</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 06 exec app-a-test ip route get 10.10.12.10">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Delete a destination return route and observe a connection that reaches the router but cannot complete.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → app-b-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 06 exec app-b-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 06 exec app-b-test ip route">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 06 down</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#key-concepts">Key Concepts</a><a href="#what-is-a-static-route">What Is a Static Route?</a><a href="#what-is-a-next-hop">What Is a Next Hop?</a><a href="#forward-and-return-paths">Forward and Return Paths</a><a href="#most-specific-route-wins">Most-Specific Route Wins</a><a href="#runtime-route-state">Runtime Route State</a><a href="#goal">Goal</a></nav><div class="lesson-notes" data-static-notes><h3 id="key-concepts">Key Concepts</h3>
+<h4 id="what-is-a-static-route">What Is a Static Route?</h4>
+<p>A static route is a route that is explicitly configured instead of being
+learned from a routing protocol.</p>
+<p>It tells Linux:</p>
+<pre><code class="language-text">for this destination network,
+send the packet to this next hop
+</code></pre>
+<p>For example, <code>app-a-test</code> uses:</p>
+<pre><code class="language-text">10.10.12.0/24 via 10.10.11.2
+</code></pre>
+<p>This means:</p>
+<pre><code class="language-text">traffic for 10.10.12.0/24 network
+        -&gt; send to 10.10.11.2 address
+        -&gt; use the local app_a interface
+</code></pre>
+<p>The address <code>10.10.11.2</code> belongs to <code>lab-router</code> on the same subnet as
+<code>app-a-test</code>.</p>
+<hr/>
+<h4 id="what-is-a-next-hop">What Is a Next Hop?</h4>
+<p>A next hop is the directly reachable device that receives a packet next.</p>
+<p>The next hop must be reachable on the sender's local network.
+For a container to be able to reach a router there must be on the same network</p>
+<p>For <code>app-a-test</code>:</p>
+<pre><code class="language-text">app-a-test
+10.10.11.10
+        |
+        | same app_a subnet
+        v
+lab-router
+10.10.11.2
+</code></pre>
+<p>This is a valid next hop.</p>
+<p>The address <code>10.10.12.2</code> is the router's address on a different subnet.
+As the router has a different ip adress in each subnet
+once the router get attached to a subnet it it given an ip address within that subnet which it uses to commuincate with other hosts (containers) in that subnet
+sp beacuse the ip addresss is different in each subnet reaching the router on an ip not available within your subnet is
+not a valid next hop directly from <code>app-a-test</code> because <code>app-a-test</code> cannot
+reach that interface at Layer 2.</p>
+<p>So:</p>
+<pre><code class="language-text">valid:
+10.10.12.0/24 via 10.10.11.2
+
+invalid from app-a-test:
+10.10.12.0/24 via 10.10.12.2
+</code></pre>
+<p>The next hop is always selected from the sender's local network.</p>
+<hr/>
+<h4 id="forward-and-return-paths">Forward and Return Paths</h4>
+<p>A packet needs a route from the source to the destination:</p>
+<pre><code class="language-text">forward path:
+app-a-test -&gt; lab-router -&gt; app-b-test
+</code></pre>
+<p>The response needs a route in the opposite direction:</p>
+<pre><code class="language-text">return path:
+app-b-test -&gt; lab-router -&gt; app-a-test
+</code></pre>
+<p>Both paths are required for a complete connection.</p>
+<p>For example, the request from <code>app-a-test</code> to <code>app-b-test</code> uses:</p>
+<pre><code class="language-text">10.10.12.0/24 via 10.10.11.2
+</code></pre>
+<p>The reply from <code>app-b-test</code> uses:</p>
+<pre><code class="language-text">10.10.11.0/24 via 10.10.12.2
+</code></pre>
+<p>The two routes use different router interfaces because each endpoint sends to
+the router address on its own local subnet.</p>
+<hr/>
+<h4 id="most-specific-route-wins">Most-Specific Route Wins</h4>
+<p>Linux compares a destination with the routes in its routing table.</p>
+<p>It chooses the most-specific matching route before considering a broader route
+or the default route.</p>
+<p>For <code>app-a-test</code>, the table may contain:</p>
+<pre><code class="language-text">10.10.12.0/24 via 10.10.11.2
+default via 10.10.11.1
+</code></pre>
+<p>When the destination is <code>10.10.12.10</code>, the <code>/24</code> route wins over the default
+route:</p>
+<pre><code class="language-text">10.10.12.10
+        |
+        v
+10.10.12.0/24 via 10.10.11.2
+</code></pre>
+<p>The Docker gateway <code>10.10.11.1</code> is used only when no more-specific route
+matches.</p>
+<hr/>
+<h4 id="runtime-route-state">Runtime Route State</h4>
+<p>Routes added with <code>ip route add</code> or <code>ip route replace</code> live in the container's
+network namespace.</p>
+<p>They are runtime state:</p>
+<pre><code class="language-text">container recreated
+        |
+        v
+network namespace recreated
+        |
+        v
+runtime route disappears
+</code></pre>
+<p>Chapter 06 puts the route commands in the Compose service command so the routes
+are reapplied when each container starts.</p>
+<p>This is not the same as storing a route in the host operating system.</p>
+<hr/>
+<h3 id="goal">Goal</h3>
+<p>Teach the six diagnostic containers how to reach remote lab subnets through the
+multi-homed <code>lab-router</code>.</p>
+<p>By the end of this chapter you should be able to:</p>
+<ul>
+<li>identify a missing remote route;</li>
+<li>choose a valid local next hop;</li>
+<li>explain why a default Docker gateway is not the lab router;</li>
+<li>inspect route selection with <code>ip route get</code>;</li>
+<li>distinguish a forward route from a return route;</li>
+<li>test routed connectivity across the lab subnets;</li>
+<li>understand why <code>ip route replace</code> is used at container startup;</li>
+<li>diagnose a failure caused by a missing route.</li>
+</ul>
+<hr/>
+<h3 id="chapter-progression">Chapter Progression</h3>
+<p>Chapter 05 introduced a router connected to all six networks.</p>
+<p>At the end of Chapter 05, the router knows every connected subnet, but the
+client containers still know only about their own local networks.</p>
+<pre><code class="language-text">Chapter 05
+router exists
+        +
+clients have local routes only
+        |
+        v
+Chapter 06
+clients receive remote static routes
+        +
+forward path
+        +
+return path
+        +
+end-to-end connectivity
+</code></pre>
+<p>The optional Chapter 05B lesson explores the same routing idea with a chain of
+three routers. This Chapter 06 lesson returns to the standard six-network lab
+with one router attached to every subnet.</p>
+<hr/>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>This chapter adds no new containers or networks.</p>
+<p>The existing six diagnostic containers receive startup commands that install
+routes to every remote subnet.</p>
+<p>The router remains:</p>
+<pre><code class="language-text">lab-router
+10.10.1.2    on public_a
+10.10.2.2    on public_b
+10.10.11.2   on app_a
+10.10.12.2   on app_b
+10.10.21.2   on db_a
+10.10.22.2   on db_b
+</code></pre>
+<p>The six endpoint containers remain:</p>
+<pre><code class="language-text">public-a-test   10.10.1.10
+public-b-test   10.10.2.10
+app-a-test      10.10.11.10
+app-b-test      10.10.12.10
+db-a-test       10.10.21.10
+db-b-test       10.10.22.10
+</code></pre>
+<p>The topology is:</p>
+<pre><code class="language-text">                         lab-router
+                  one interface per subnet
+                              |
+       +----------------------+----------------------+
+       |                      |                      |
+   public_a                app_a                  db_a
+ 10.10.1.0/24          10.10.11.0/24          10.10.21.0/24
+       |                      |                      |
+public-a-test           app-a-test               db-a-test
+ 10.10.1.10             10.10.11.10              10.10.21.10
+
+       |                      |                      |
+       +----------------------+----------------------+
+                              |
+                         lab-router
+                  one interface per subnet
+                              |
+       +----------------------+----------------------+
+       |                      |                      |
+   public_b                app_b                  db_b
+ 10.10.2.0/24           10.10.12.0/24          10.10.22.0/24
+       |                      |                      |
+public-b-test           app-b-test               db-b-test
+ 10.10.2.10             10.10.12.10              10.10.22.10
+</code></pre>
+<p>The router is one container with six interfaces. A client must still be taught
+which local router interface to use for each remote destination.</p>
+<hr/>
+<h3 id="important-lab-rule">Important Lab Rule</h3>
+<p>Chapter 05B asks the learner to add routes manually. Chapter 06 intentionally
+automates the known-good routes in the Compose overlay after the routing model
+has been introduced.</p>
+<p>The route commands use:</p>
+<pre><code class="language-bash">ip route replace DESTINATION via NEXT_HOP
+</code></pre>
+<p><code>replace</code> is used instead of <code>add</code> because it is safe to run when the route is
+already present:</p>
+<pre><code class="language-text">route missing
+        -&gt; create it
+
+route already exists
+        -&gt; update it without creating a duplicate
+</code></pre>
+<p>The command runs before <code>sleep infinity</code>, so the container stays alive after
+the route setup completes.</p>
+<hr/>
+<h3 id="route-plan">Route Plan</h3>
+<p>Each endpoint uses the router address on its own subnet as the next hop.</p>
+<h4 id="public-a-test"><code>public-a-test</code></h4>
+<p>Local address:</p>
+<pre><code class="language-text">10.10.1.10
+</code></pre>
+<p>Router next hop:</p>
+<pre><code class="language-text">10.10.1.2
+</code></pre>
+<p>Remote routes:</p>
+<pre><code class="language-text">10.10.2.0/24 via 10.10.1.2
+10.10.11.0/24 via 10.10.1.2
+10.10.12.0/24 via 10.10.1.2
+10.10.21.0/24 via 10.10.1.2
+10.10.22.0/24 via 10.10.1.2
+</code></pre>
+<h4 id="public-b-test"><code>public-b-test</code></h4>
+<p>Local address:</p>
+<pre><code class="language-text">10.10.2.10
+</code></pre>
+<p>Router next hop:</p>
+<pre><code class="language-text">10.10.2.2
+</code></pre>
+<p>Remote routes:</p>
+<pre><code class="language-text">10.10.1.0/24 via 10.10.2.2
+10.10.11.0/24 via 10.10.2.2
+10.10.12.0/24 via 10.10.2.2
+10.10.21.0/24 via 10.10.2.2
+10.10.22.0/24 via 10.10.2.2
+</code></pre>
+<h4 id="app-a-test"><code>app-a-test</code></h4>
+<p>Local address:</p>
+<pre><code class="language-text">10.10.11.10
+</code></pre>
+<p>Router next hop:</p>
+<pre><code class="language-text">10.10.11.2
+</code></pre>
+<p>Remote routes:</p>
+<pre><code class="language-text">10.10.1.0/24 via 10.10.11.2
+10.10.2.0/24 via 10.10.11.2
+10.10.12.0/24 via 10.10.11.2
+10.10.21.0/24 via 10.10.11.2
+10.10.22.0/24 via 10.10.11.2
+</code></pre>
+<h4 id="app-b-test"><code>app-b-test</code></h4>
+<p>Local address:</p>
+<pre><code class="language-text">10.10.12.10
+</code></pre>
+<p>Router next hop:</p>
+<pre><code class="language-text">10.10.12.2
+</code></pre>
+<p>Remote routes:</p>
+<pre><code class="language-text">10.10.1.0/24 via 10.10.12.2
+10.10.2.0/24 via 10.10.12.2
+10.10.11.0/24 via 10.10.12.2
+10.10.21.0/24 via 10.10.12.2
+10.10.22.0/24 via 10.10.12.2
+</code></pre>
+<h4 id="db-a-test"><code>db-a-test</code></h4>
+<p>Local address:</p>
+<pre><code class="language-text">10.10.21.10
+</code></pre>
+<p>Router next hop:</p>
+<pre><code class="language-text">10.10.21.2
+</code></pre>
+<p>Remote routes:</p>
+<pre><code class="language-text">10.10.1.0/24 via 10.10.21.2
+10.10.2.0/24 via 10.10.21.2
+10.10.11.0/24 via 10.10.21.2
+10.10.12.0/24 via 10.10.21.2
+10.10.22.0/24 via 10.10.21.2
+</code></pre>
+<h4 id="db-b-test"><code>db-b-test</code></h4>
+<p>Local address:</p>
+<pre><code class="language-text">10.10.22.10
+</code></pre>
+<p>Router next hop:</p>
+<pre><code class="language-text">10.10.22.2
+</code></pre>
+<p>Remote routes:</p>
+<pre><code class="language-text">10.10.1.0/24 via 10.10.22.2
+10.10.2.0/24 via 10.10.22.2
+10.10.11.0/24 via 10.10.22.2
+10.10.12.0/24 via 10.10.22.2
+10.10.21.0/24 via 10.10.22.2
+</code></pre>
+<hr/>
+<h3 id="tasks">Tasks</h3>
+<ol>
+<li>Start the Chapter 05 baseline and observe the missing client route.</li>
+<li>Apply the Chapter 06 overlay.</li>
+<li>Inspect the routes installed in <code>app-a-test</code>.</li>
+<li>Ask Linux which next hop it selects for <code>app-b-test</code>.</li>
+<li>Confirm the router is forwarding IPv4 packets.</li>
+<li>Test connectivity between application networks.</li>
+<li>Test connectivity between public and database networks.</li>
+<li>Inspect the return route on the destination container.</li>
+<li>Recreate a service and confirm its routes are reapplied.</li>
+<li>Delete a forward or return route and observe the failure.</li>
+</ol>
+<hr/>
+<h3 id="checkpoint">Checkpoint</h3>
+<h2 id="part-1-observe-the-chapter-05-baseline">Part 1: Observe the Chapter 05 Baseline</h2>
+<h3 id="task-1-start-the-previous-stage">Task 1: Start the Previous Stage</h3>
+<p>Start the standard Chapter 05 topology:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 05 up -d --build
+</code></pre>
+<p>Confirm that the containers are running:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 05 ps
+</code></pre>
+<p>The important services are:</p>
+<pre><code class="language-text">public-a-test
+public-b-test
+app-a-test
+app-b-test
+db-a-test
+db-b-test
+lab-router
+</code></pre>
+<p>Chapter 05 provides the router and enables IPv4 forwarding, but it does not yet
+teach the clients about remote subnets.</p>
+<hr/>
+<h3 id="task-2-inspect-app-a-test-before-static-routes">Task 2: Inspect <code>app-a-test</code> Before Static Routes</h3>
+<p>Inspect its route table:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 05 exec app-a-test ip route
+</code></pre>
+<p>You should see its directly connected network and Docker's default route:</p>
+<pre><code class="language-text">default via 10.10.11.1 dev eth0
+10.10.11.0/24 dev eth0 scope link src 10.10.11.10
+</code></pre>
+<p>The exact output may also include <code>proto kernel</code> and other fields.</p>
+<p>At this point, <code>app-a-test</code> knows:</p>
+<pre><code class="language-text">10.10.11.0/24 is local subnet
+10.10.11.1 is the Docker default gateway
+</code></pre>
+<p>It does not yet have a specific route for:</p>
+<pre><code class="language-text">10.10.12.0/24 (app-b-test network)
+</code></pre>
+<hr/>
+<h3 id="task-3-ask-linux-for-the-current-route">Task 3: Ask Linux for the Current Route</h3>
+<p>Ask Linux how it would reach <code>app-b-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 05 exec app-a-test \
+  ip route get 10.10.12.10
+</code></pre>
+<p>The result should use Docker's default gateway:</p>
+<pre><code class="language-text">10.10.12.10 via 10.10.11.1 dev eth0 src 10.10.11.10
+</code></pre>
+<p>The exact output may include <code>uid 0</code> or other kernel metadata.</p>
+<p>Breakdown:</p>
+<pre><code class="language-text">destination = 10.10.12.10
+next hop    = 10.10.11.1
+interface   = eth0
+source IP   = 10.10.11.10
+</code></pre>
+<p>The route lookup does not prove that the destination is reachable. It only
+shows the decision Linux would make with the current table.</p>
+<hr/>
+<h3 id="task-4-test-the-baseline">Task 4: Test the Baseline</h3>
+<p>Try to reach <code>app-b-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 05 exec app-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p>The failure is expected because the client has not been given a route through
+the lab router.</p>
+<pre><code class="language-text">--- 10.10.12.10 ping statistics ---
+2 packets transmitted, 0 packets received, 100% packet loss
+</code></pre>
+<p>2 packets transmitted and none recieved</p>
+<p>The important distinction is:</p>
+<pre><code class="language-text">lab-router exists
+        !=
+app-a-test knows to use lab-router
+</code></pre>
+<p>The Issue is lab-router exists on the network for app-a-test but it doesn not know
+to send packages destined for other networks to the router</p>
+<p>remember the router is connected to other networks and can forward packets IPv4 forwarding
+to them so basically the router can transport packets across metworks it is connected too</p>
+<hr/>
+<h2 id="part-2-apply-the-static-routing-overlay">Part 2: Apply the Static-Routing Overlay</h2>
+<h3 id="task-5-start-chapter-06">Task 5: Start Chapter 06</h3>
+<p>Apply the Chapter 06 Compose overlay:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 up -d --build
+</code></pre>
+<p>The Chapter 06 overlay changes the command for each diagnostic service. Each
+service now runs its route setup before <code>sleep infinity</code>.
+Each service is rebuilt with the routing rules added to direct packets to
+their destinations</p>
+<p>Confirm the services again:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 ps
+</code></pre>
+<p>The topology still contains six endpoint networks, one endpoint per network,
+and the single multi-homed <code>lab-router</code>.</p>
+<hr/>
+<h3 id="task-6-inspect-the-new-app-a-test-route-table">Task 6: Inspect the New <code>app-a-test</code> Route Table</h3>
+<p>Run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test ip route
+</code></pre>
+<p>You should now find entries similar to:</p>
+<pre><code class="language-text">default via 10.10.11.1 dev eth0
+10.10.1.0/24 via 10.10.11.2 dev eth0
+10.10.2.0/24 via 10.10.11.2 dev eth0
+10.10.11.0/24 dev eth0 scope link src 10.10.11.10
+10.10.12.0/24 via 10.10.11.2 dev eth0
+10.10.21.0/24 via 10.10.11.2 dev eth0
+10.10.22.0/24 via 10.10.11.2 dev eth0
+</code></pre>
+<p>The order may vary. The important change is the presence of specific routes to
+the five remote networks.</p>
+<p>For example:</p>
+<pre><code class="language-text">10.10.12.0/24 via 10.10.11.2
+</code></pre>
+<p>The endpoint now knows that remote application traffic must first go to the
+router's <code>app_a</code> interface.</p>
+<hr/>
+<h3 id="task-7-inspect-the-overlays-command">Task 7: Inspect the Overlay's Command</h3>
+<p>Ask Compose to show the resolved Chapter 06 configuration:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 config
+</code></pre>
+<p>Find the <code>app-a-test</code> command. It contains commands similar to:</p>
+<pre><code class="language-yaml">command:
+  - sh
+  - -c
+  - |
+    set -eu
+    ip route replace 10.10.1.0/24 via 10.10.11.2
+    ip route replace 10.10.2.0/24 via 10.10.11.2
+    ip route replace 10.10.12.0/24 via 10.10.11.2
+    ip route replace 10.10.21.0/24 via 10.10.11.2
+    ip route replace 10.10.22.0/24 via 10.10.11.2
+    sleep infinity
+</code></pre>
+<p>The Compose overlay does not change the network addresses. It changes the
+startup behavior inside the endpoint container.</p>
+<hr/>
+<h2 id="part-3-inspect-route-selection">Part 3: Inspect Route Selection</h2>
+<h3 id="task-8-use-ip-route-get-for-a-remote-destination">Task 8: Use <code>ip route get</code> for a Remote Destination</h3>
+<p>Ask Linux how <code>app-a-test</code> reaches <code>app-b-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route get 10.10.12.10
+</code></pre>
+<p>Expected output:</p>
+<pre><code class="language-text">10.10.12.10 via 10.10.11.2 dev eth0 src 10.10.11.10
+</code></pre>
+<p>The next hop changed from the Docker gateway:</p>
+<pre><code class="language-text">10.10.11.1
+</code></pre>
+<p>to the lab router:</p>
+<pre><code class="language-text">10.10.11.2
+</code></pre>
+<p>This is the main change introduced by Chapter 06.</p>
+<hr/>
+<h3 id="task-9-compare-local-and-remote-destinations">Task 9: Compare Local and Remote Destinations</h3>
+<p>Ask Linux how it reaches the local router:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route get 10.10.11.2
+</code></pre>
+<p>The router address is directly connected, so no remote next hop is needed.</p>
+<p>Now ask how it reaches the remote database endpoint:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route get 10.10.22.10
+</code></pre>
+<p>Expected output:</p>
+<pre><code class="language-text">10.10.22.10 via 10.10.11.2 dev eth0 src 10.10.11.10
+</code></pre>
+<p>The endpoint does not send directly to <code>10.10.22.10</code>. It sends first to the
+router on <code>app_a</code>.</p>
+<hr/>
+<h3 id="task-10-compare-a-remote-route-with-the-default-route">Task 10: Compare a Remote Route With the Default Route</h3>
+<p>Ask Linux how it reaches an unrelated address:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route get 8.8.8.8
+</code></pre>
+<p>If a default route is present, the result should use:</p>
+<pre><code class="language-text">10.10.11.1
+</code></pre>
+<p>The specific lab route still wins for <code>10.10.22.10</code> because:</p>
+<pre><code class="language-text">10.10.22.0/24
+</code></pre>
+<p>is more specific than:</p>
+<pre><code class="language-text">default
+</code></pre>
+<p>This is why the Docker default gateway does not override the static route.</p>
+<hr/>
+<h2 id="part-4-confirm-router-forwarding">Part 4: Confirm Router Forwarding</h2>
+<h3 id="task-11-inspect-lab-router">Task 11: Inspect <code>lab-router</code></h3>
+<p>The client route only identifies the first next hop. The router must also have
+the destination network in its own table.</p>
+<p>Inspect the router:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec lab-router ip route
+</code></pre>
+<p>The router should have connected routes for all six networks:</p>
+<pre><code class="language-text">10.10.1.0/24 dev ethX scope link src 10.10.1.2
+10.10.2.0/24 dev ethX scope link src 10.10.2.2
+10.10.11.0/24 dev ethX scope link src 10.10.11.2
+10.10.12.0/24 dev ethX scope link src 10.10.12.2
+10.10.21.0/24 dev ethX scope link src 10.10.21.2
+10.10.22.0/24 dev ethX scope link src 10.10.22.2
+</code></pre>
+<p>The interface names and extra route fields may vary.</p>
+<p>These are connected routes because the router has an interface in every subnet.</p>
+<p>The router does not need a static route for these six networks.</p>
+<hr/>
+<h3 id="task-12-confirm-ipv4-forwarding">Task 12: Confirm IPv4 Forwarding</h3>
+<p>Run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec lab-router \
+  sysctl net.ipv4.ip_forward
+</code></pre>
+<p>Expected output:</p>
+<pre><code class="language-text">net.ipv4.ip_forward = 1
+</code></pre>
+<p>The router needs both:</p>
+<pre><code class="language-text">routes
+       +
+IPv4 forwarding enabled
+</code></pre>
+<p>Without forwarding, the router could communicate with endpoints itself but
+would not move packets between endpoint networks.</p>
+<hr/>
+<h3 id="task-13-inspect-the-routers-route-decision">Task 13: Inspect the Router's Route Decision</h3>
+<p>Ask the router how it reaches <code>db-b-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec lab-router \
+  ip route get 10.10.22.10
+</code></pre>
+<p>The result should select the router's directly connected <code>db_b</code> interface and
+source address <code>10.10.22.2</code>:</p>
+<pre><code class="language-text">10.10.22.10 dev ethX src 10.10.22.2
+</code></pre>
+<p>The complete forward decision is now visible:</p>
+<pre><code class="language-text">app-a-test route:
+10.10.22.0/24 via 10.10.11.2
+
+lab-router route:
+10.10.22.0/24 is directly connected
+</code></pre>
+<hr/>
+<h2 id="part-5-test-the-forward-path">Part 5: Test the Forward Path</h2>
+<h3 id="task-14-reach-the-router-interface">Task 14: Reach the Router Interface</h3>
+<p>First test the local router interface:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ping -c 2 10.10.11.2
+</code></pre>
+<p>Expected result:</p>
+<pre><code class="language-text">2 packets transmitted, 2 packets received, 0% packet loss
+</code></pre>
+<p>This confirms that <code>app-a-test</code> can reach its next hop on the local <code>app_a</code>
+network.</p>
+<p>It does not yet prove that the router can forward traffic to a remote endpoint.</p>
+<hr/>
+<h3 id="task-15-reach-app-b-test">Task 15: Reach <code>app-b-test</code></h3>
+<p>Now test the routed path:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p>Expected result:</p>
+<pre><code class="language-text">2 packets transmitted, 2 packets received, 0% packet loss
+</code></pre>
+<p>The request path is:</p>
+<pre><code class="language-text">app-a-test
+10.10.11.10
+        |
+        | next hop 10.10.11.2
+        v
+lab-router
+10.10.11.2 -&gt; 10.10.12.2
+        |
+        | connected app_b network
+        v
+app-b-test
+10.10.12.10
+</code></pre>
+<p>The source and destination addresses remain the endpoint addresses. The router
+forwards the packet; it does not perform NAT in this chapter.</p>
+<hr/>
+<h3 id="task-16-reach-a-database-network">Task 16: Reach a Database Network</h3>
+<p>Test a path that crosses from the application zone to the database zone:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ping -c 2 10.10.22.10
+</code></pre>
+<p>The path is:</p>
+<pre><code class="language-text">app-a-test 10.10.11.10
+        |
+        | via 10.10.11.2
+        v
+lab-router
+        |
+        | connected db_b route
+        v
+db-b-test 10.10.22.10
+</code></pre>
+<p>The route on <code>app-a-test</code> is:</p>
+<pre><code class="language-text">10.10.22.0/24 via 10.10.11.2
+</code></pre>
+<p>The route on the router is automatic because <code>db_b</code> is directly attached.</p>
+<hr/>
+<h3 id="task-17-test-the-public-to-database-path">Task 17: Test the Public-to-Database Path</h3>
+<p>Test another source and destination pair:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec public-a-test \
+  ping -c 2 10.10.22.10
+</code></pre>
+<p>The source uses the router address on <code>public_a</code>:</p>
+<pre><code class="language-text">10.10.22.0/24 via 10.10.1.2
+</code></pre>
+<p>The router forwards the packet out its <code>db_b</code> interface:</p>
+<pre><code class="language-text">10.10.22.2
+</code></pre>
+<p>This test demonstrates that the static routes are installed in every endpoint,
+not only in the application containers.</p>
+<hr/>
+<h2 id="part-6-confirm-the-return-path">Part 6: Confirm the Return Path</h2>
+<h3 id="task-18-inspect-app-b-test">Task 18: Inspect <code>app-b-test</code></h3>
+<p>The destination must know how to return traffic to <code>app-a-test</code>.</p>
+<p>Inspect its route table:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-b-test ip route
+</code></pre>
+<p>Find the route:</p>
+<pre><code class="language-text">10.10.11.0/24 via 10.10.12.2
+</code></pre>
+<p>This route sends the reply to the router's <code>app_b</code> interface.</p>
+<hr/>
+<h3 id="task-19-ask-for-the-return-route">Task 19: Ask for the Return Route</h3>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-b-test \
+  ip route get 10.10.11.10
+</code></pre>
+<p>Expected output:</p>
+<pre><code class="language-text">10.10.11.10 via 10.10.12.2 dev eth0 src 10.10.12.10
+</code></pre>
+<p>The complete exchange is:</p>
+<pre><code class="language-text">request:
+app-a-test -&gt; 10.10.11.2 -&gt; app-b-test
+
+reply:
+app-b-test -&gt; 10.10.12.2 -&gt; app-a-test
+</code></pre>
+<p>The next-hop addresses differ because each endpoint is attached to a different
+subnet.</p>
+<hr/>
+<h3 id="task-20-trace-the-path">Task 20: Trace the Path</h3>
+<p>If <code>traceroute</code> is available in the lab image, run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  traceroute -n -m 3 -w 1 10.10.12.10
+</code></pre>
+<p>Expected sequence:</p>
+<pre><code class="language-text">1  10.10.11.2
+2  10.10.12.10
+</code></pre>
+<p>The exact formatting may vary.</p>
+<p>The important observation is that the router appears as an intermediate hop.</p>
+<p>For this one-router topology:</p>
+<pre><code class="language-text">app-a-test -&gt; lab-router -&gt; app-b-test
+</code></pre>
+<p>The <code>ping</code> command proves reachability. <code>traceroute</code> makes the Layer-3 path
+visible.</p>
+<hr/>
+<h2 id="part-7-understand-route-persistence">Part 7: Understand Route Persistence</h2>
+<h3 id="task-21-recreate-app-a-test">Task 21: Recreate <code>app-a-test</code></h3>
+<p>Routes are stored in the container network namespace, so recreating a service
+removes its current runtime route table.</p>
+<p>Recreate the service with the Chapter 06 overlay:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 up -d --force-recreate app-a-test
+</code></pre>
+<p>Inspect the route again:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route get 10.10.22.10
+</code></pre>
+<p>The route should still use:</p>
+<pre><code class="language-text">10.10.11.2
+</code></pre>
+<p>Why did it return?</p>
+<p>Because the service command ran again:</p>
+<pre><code class="language-text">container created
+        |
+        v
+route setup command executed
+        |
+        v
+sleep infinity
+</code></pre>
+<p>This is a simple form of runtime configuration persistence.</p>
+<hr/>
+<h3 id="task-22-understand-replace">Task 22: Understand <code>replace</code></h3>
+<p>Run the same route replacement manually:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route replace 10.10.22.0/24 via 10.10.11.2
+</code></pre>
+<p>Inspect the matching route:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route get 10.10.22.10
+</code></pre>
+<p>It should still identify the same next hop.</p>
+<p><code>replace</code> does not create duplicate equivalent routes. It ensures that the
+desired route is present with the desired next hop.</p>
+<hr/>
+<h2 id="part-8-break-the-forward-path">Part 8: Break the Forward Path</h2>
+<h3 id="task-23-delete-the-forward-route">Task 23: Delete the Forward Route</h3>
+<p>Delete the route from <code>app-a-test</code> to <code>app-b-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route delete 10.10.12.0/24 via 10.10.11.2
+</code></pre>
+<p>Confirm the specific route is gone:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route get 10.10.12.10
+</code></pre>
+<p>Linux should now select the default Docker gateway instead of the lab router:</p>
+<pre><code class="language-text">10.10.12.10 via 10.10.11.1 dev eth0 src 10.10.11.10
+</code></pre>
+<p>Test again:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p>The routed path should fail.</p>
+<p>The router is still running and forwarding. The failure occurs before the
+packet reaches the intended lab-router interface because the source selected
+the wrong next hop.</p>
+<hr/>
+<h3 id="task-24-restore-the-forward-route">Task 24: Restore the Forward Route</h3>
+<p>Recreate <code>app-a-test</code> so the startup command reapplies the route:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 up -d --force-recreate app-a-test
+</code></pre>
+<p>Confirm:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route get 10.10.12.10
+</code></pre>
+<p>Expected:</p>
+<pre><code class="language-text">10.10.12.10 via 10.10.11.2 dev eth0 src 10.10.11.10
+</code></pre>
+<p>Retest:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<hr/>
+<h2 id="part-9-break-the-return-path">Part 9: Break the Return Path</h2>
+<h3 id="task-25-delete-the-destinations-return-route">Task 25: Delete the Destination's Return Route</h3>
+<p>Delete the route from <code>app-b-test</code> back to <code>app-a-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-b-test \
+  ip route delete 10.10.11.0/24 via 10.10.12.2
+</code></pre>
+<p>Confirm the route decision changed:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-b-test \
+  ip route get 10.10.11.10
+</code></pre>
+<p>It should now use the Docker default gateway:</p>
+<pre><code class="language-text">10.10.11.10 via 10.10.12.1 dev eth0 src 10.10.12.10
+</code></pre>
+<p>Test from the source again:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p>The request may reach <code>app-b-test</code>, but the reply cannot use the correct route
+back through the lab router.</p>
+<p>This is the key observation:</p>
+<pre><code class="language-text">forward route present
+        !=
+complete connection
+</code></pre>
+<hr/>
+<h3 id="task-26-restore-the-return-route">Task 26: Restore the Return Route</h3>
+<p>Recreate <code>app-b-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 up -d --force-recreate app-b-test
+</code></pre>
+<p>Confirm the return route:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-b-test \
+  ip route get 10.10.11.10
+</code></pre>
+<p>Expected:</p>
+<pre><code class="language-text">10.10.11.10 via 10.10.12.2 dev eth0 src 10.10.12.10
+</code></pre>
+<p>Retest the connection:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p>The route setup command restores the complete path.</p>
+<hr/>
+<h3 id="important-observation">Important Observation</h3>
+<p>A successful ping requires all of these decisions to be correct:</p>
+<pre><code class="language-text">source route
+        +
+reachable local next hop
+        +
+router connected destination route
+        +
+router IPv4 forwarding
+        +
+destination return route
+        =
+successful exchange
+</code></pre>
+<p>The first failure in this chain determines where troubleshooting should begin.</p>
+<p>Use <code>ip route get</code> at each node instead of guessing:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 exec app-a-test \
+  ip route get 10.10.12.10
+
+bash scripts/compose-stage.sh 06 exec lab-router \
+  ip route get 10.10.12.10
+
+bash scripts/compose-stage.sh 06 exec app-b-test \
+  ip route get 10.10.11.10
+</code></pre>
+<p>These three commands show:</p>
+<pre><code class="language-text">source next hop
+router destination decision
+destination return next hop
+</code></pre>
+<hr/>
+<h3 id="expected-observation">Expected Observation</h3>
+<p>Before Chapter 06, <code>app-a-test</code> selected:</p>
+<pre><code class="language-text">10.10.12.10 via 10.10.11.1
+</code></pre>
+<p>After Chapter 06, it selects:</p>
+<pre><code class="language-text">10.10.12.10 via 10.10.11.2
+</code></pre>
+<p>The packet path is:</p>
+<pre><code class="language-text">app-a-test
+10.10.11.10
+        |
+        | 10.10.12.0/24 via 10.10.11.2
+        v
+lab-router
+10.10.11.2
+        |
+        | connected route to 10.10.12.0/24
+        v
+app-b-test
+10.10.12.10
+</code></pre>
+<p>The return path is:</p>
+<pre><code class="language-text">app-b-test
+10.10.12.10
+        |
+        | 10.10.11.0/24 via 10.10.12.2
+        v
+lab-router
+10.10.12.2
+        |
+        | connected route to 10.10.11.0/24
+        v
+app-a-test
+10.10.11.10
+</code></pre>
+<p>The router is the forwarding device, but each endpoint still needs a route
+pointing to the correct router interface.</p>
+<hr/>
+<h3 id="key-mental-model">Key Mental Model</h3>
+<pre><code class="language-text">connected route
+= Linux knows the network because an interface is attached to it
+</code></pre>
+<pre><code class="language-text">static route
+= an explicit destination and next-hop relationship
+</code></pre>
+<pre><code class="language-text">next hop
+= the directly reachable device that receives the packet next
+</code></pre>
+<pre><code class="language-text">default route
+= fallback route used when no more-specific route matches
+</code></pre>
+<pre><code class="language-text">forward path
+= source to destination route decisions
+</code></pre>
+<pre><code class="language-text">return path
+= destination to source route decisions
+</code></pre>
+<p>For <code>app-a-test</code> reaching <code>app-b-test</code>:</p>
+<pre><code class="language-text">destination 10.10.12.10
+        |
+        v
+match 10.10.12.0/24
+        |
+        v
+next hop 10.10.11.2
+        |
+        v
+lab-router forwards
+        |
+        v
+app-b-test replies via 10.10.12.2
+</code></pre>
+<p>And most importantly:</p>
+<pre><code class="language-text">router exists
+        !=
+client has a route to the router
+</code></pre>
+<pre><code class="language-text">forward route
+        +
+return route
+        =
+working exchange
+</code></pre>
+<hr/>
+<h3 id="review-checkpoint">Review Checkpoint</h3>
+<p>Answer these questions without looking at the final route table:</p>
+<ol>
+<li>Why is <code>10.10.11.2</code> a valid next hop for <code>app-a-test</code>?</li>
+<li>Why is <code>10.10.12.2</code> not the first next hop from <code>app-a-test</code>?</li>
+<li>Why does the specific <code>/24</code> route win over the Docker default route?</li>
+<li>What route does <code>app-b-test</code> need to reply to <code>app-a-test</code>?</li>
+<li>Why can the router use connected routes without static routes for the six lab networks?</li>
+<li>What does <code>ip route get</code> show?</li>
+<li>Why can a packet reach the destination while the connection still fails?</li>
+<li>What happens to runtime routes when a container is recreated?</li>
+<li>Why does the Compose command use <code>ip route replace</code> instead of only <code>ip route add</code>?</li>
+<li>Which node should you inspect first when a remote ping fails?</li>
+</ol>
+<hr/>
+<h3 id="clean-up">Clean Up</h3>
+<p>Remove the resources created for the standard cumulative lab:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 06 down
+</code></pre>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>Why is 10.10.11.2 a valid next hop from app-a-test?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 06 exec app-a-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 06 exec app-a-test ip route">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>The next hop must be reachable on the sender local network. app-a-test can reach lab-router at .2 on app_a, not the router address on a different subnet.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="0" data-explanation="app-a-test must send to the router interface on its own local app_a subnet: 10.10.11.2. The remote router interface is not directly reachable at Layer 2."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>From app-a-test (10.10.11.10), which router address is a valid next hop toward app_b (10.10.12.0/24)?</p><div class="prediction-options"><button type="button" data-question-choice="0">10.10.11.2</button><button type="button" data-question-choice="1">10.10.12.2</button><button type="button" data-question-choice="2">10.10.11.1</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="06" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>Routing is a two-way contract: the request path and the return path must both exist.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/router-container/"><span>Chapter 05</span><strong>Multi-Homed Router Container</strong><p>Introduce a Layer-3 device attached to all six bridges, then observe the connected routes Linux creates for it.</p></a><a href="/labs/docker-networking/packet-tracing/"><span>Chapter 07</span><strong>Packet Tracing</strong><p>Turn a route-table prediction into evidence by watching ingress, forwarded egress, and the reply on the router.</p></a><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/packet-tracing/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

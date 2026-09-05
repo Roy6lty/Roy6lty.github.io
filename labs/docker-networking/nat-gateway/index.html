@@ -1,0 +1,330 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Follow a private packet to the NAT gateway, then observe MASQUERADE rewrite the source after routing chooses the interface. Separate routing from address…"><meta name="theme-color" content="#101515"><title>Docker NAT Gateway — MASQUERADE &amp; SNAT Hands-on Lab | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/nat-gateway/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="Docker NAT Gateway — MASQUERADE &amp; SNAT Hands-on Lab | Ayo Olowoleru"><meta property="og:description" content="Follow a private packet to the NAT gateway, then observe MASQUERADE rewrite the source after routing chooses the interface. Separate routing from address…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/nat-gateway/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"NAT Gateway","item":"https://ayo-olowoleru.xyz/labs/docker-networking/nat-gateway/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Docker NAT Gateway — MASQUERADE & SNAT Hands-on Lab","description":"Follow a private packet to the NAT gateway, then observe MASQUERADE rewrite the source after routing chooses the interface. Separate routing from address…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/nat-gateway/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["default route","NAT gateway","MASQUERADE","conntrack translation"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>ROUTING FABRIC</span><span>Chapter 10</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/10-nat-gateway/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 10 / ROUTING FABRIC</span><h1>NAT Gateway<br><em>Separate routing from address translation and provide controlled egress for private application networks.</em></h1><p>Follow a private packet to the NAT gateway, then observe MASQUERADE rewrite the source after routing chooses the interface.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>10<small>/ 17</small></strong><p>Route first, translate second.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>10 / 17</span></div><div class="chapter-rail-progress"><span style="width:58.8%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link is-current" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/10-nat-gateway/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 10 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Attaches nat-gateway to both app networks and nat_public. App default routes point to it and the gateway MASQUERADEs app traffic.</p></div><div><span>Lab state</span><p>Private app networks / nat-gateway / nat_public egress network / MASQUERADE</p><div class="chapter-tags"><span>default route</span><span>NAT gateway</span><span>MASQUERADE</span><span>conntrack translation</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>Route first, translate second.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/10-nat-gateway/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-10.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-10.svg" alt="NAT Gateway topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Inspect the selected route</h3><p>Ask app-a which next hop and interface it will use for the public NAT network.</p><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 10 exec app-a-test ip route get 10.10.30.10</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 10 exec app-a-test ip route get 10.10.30.10">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Inspect translation rules</h3><p>Read POSTROUTING before generating the request.</p><div class="series-command"><div class="series-command-meta"><span>HOST → nat-gateway</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 10 exec nat-gateway iptables -t nat -L POSTROUTING -n -v</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 10 exec nat-gateway iptables -t nat -L POSTROUTING -n -v">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Run the egress check</h3><p>Run the repository NAT test and compare the rule counters afterward.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/test-nat.sh</code></pre><button type="button" data-copy-command="bash scripts/test-nat.sh">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Delete the NAT gateway default route while leaving MASQUERADE configured. The counters should stay unchanged.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → nat-gateway</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 10 exec nat-gateway ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 10 exec nat-gateway ip route">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 10 up -d --force-recreate nat-gateway</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#key-concepts">Key Concepts</a><a href="#default-routes">Default Routes</a><a href="#what-is-a-nat-gateway">What Is a NAT Gateway?</a><a href="#masquerade">MASQUERADE</a><a href="#goal">Goal</a><a href="#progression-from-chapter-09">Progression From Chapter 09</a><a href="#what-this-stage-adds">What This Stage Adds</a></nav><div class="lesson-notes" data-static-notes><h3 id="key-concepts">Key Concepts</h3>
+<h4 id="default-routes">Default Routes</h4>
+<p>A default route is the catch-all route used when no more-specific route
+matches. Chapter 06 installed specific routes from the endpoint containers to
+the other lab subnets. Chapter 10 keeps those routes and replaces the app
+default route with a route through <code>nat-gateway</code>.</p>
+<p>For <code>app-a-test</code>:</p>
+<pre><code class="language-text">10.10.21.0/24 -&gt; lab-router at 10.10.11.2
+everything else -&gt; nat-gateway at 10.10.11.3
+</code></pre>
+<p>The specific database route still wins over the default route.</p>
+<h4 id="what-is-a-nat-gateway">What Is a NAT Gateway?</h4>
+<p><code>nat-gateway</code> is a multi-homed Linux container. It has one interface in each
+application network and one interface in <code>nat_public</code>:</p>
+<pre><code class="language-text">app_a      10.10.11.3
+app_b      10.10.12.3
+nat_public 10.10.30.2
+</code></pre>
+<p>It has IPv4 forwarding enabled and uses conntrack to remember translations.
+The gateway receives private traffic on an app interface, forwards it toward
+<code>nat_public</code>, and rewrites the source address on the public-facing interface.</p>
+<h4 id="masquerade">MASQUERADE</h4>
+<p>The NAT entrypoint installs these rules:</p>
+<pre><code class="language-text">10.10.11.0/24 -&gt; MASQUERADE when leaving nat_public
+10.10.12.0/24 -&gt; MASQUERADE when leaving nat_public
+</code></pre>
+<p>For an app request such as:</p>
+<pre><code class="language-text">before: 10.10.11.10:40000 -&gt; 10.10.30.10:8080
+after:  10.10.30.2:40000  -&gt; 10.10.30.10:8080
+</code></pre>
+<p>the actual source port may vary. MASQUERADE uses the current address of the
+egress interface. <code>SNAT</code> is the alternative when an explicit source address is
+preferred.</p>
+<p>NAT changes addresses after route selection chooses an egress interface. It
+does not choose the route, and it is not a substitute for a firewall.</p>
+<h3 id="goal">Goal</h3>
+<p>Separate routing from address translation and provide controlled egress for
+the private application networks. By the end, you should be able to:</p>
+<ul>
+<li>identify the three <code>nat-gateway</code> interfaces;</li>
+<li>show that app traffic selects the NAT gateway as its default next hop;</li>
+<li>distinguish a specific lab route from the default route;</li>
+<li>observe <code>MASQUERADE</code> rule counters increase after an HTTP request;</li>
+<li>verify from server logs that the public-side source is <code>10.10.30.2</code>;</li>
+<li>explain why the reply can return to a private app through conntrack;</li>
+<li>recover after removing the gateway's default route.</li>
+</ul>
+<h3 id="progression-from-chapter-09">Progression From Chapter 09</h3>
+<p>Chapter 09 marked <code>app_a</code>, <code>app_b</code>, <code>db_a</code>, and <code>db_b</code> as <code>internal: true</code>.
+That removed the normal Docker bridge egress path. The app containers could
+still use explicit lab routes through <code>lab-router</code>, but they had no controlled
+path to an external or public-side network.</p>
+<p>Chapter 10 adds a separate egress device:</p>
+<pre><code class="language-text">Chapter 09: private app bridges, no NAT gateway
+        |
+        v
+Chapter 10: app default routes -&gt; nat-gateway -&gt; nat_public
+</code></pre>
+<p>The lab router remains responsible for the explicit routes between the six
+original subnets. The NAT gateway handles the app default path.</p>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>The Compose overlay adds these services and network changes:</p>
+<pre><code class="language-text">nat-gateway      app_a 10.10.11.3
+                 app_b 10.10.12.3
+                 nat_public 10.10.30.2
+
+nat-public-test  nat_public 10.10.30.10
+                 Python HTTP server on TCP 8080
+</code></pre>
+<p><code>nat-gateway</code> uses image
+<code>docker-networking-vpc-lab/nat-gateway:masquerade</code>, adds <code>NET_ADMIN</code> and
+<code>NET_RAW</code>, and sets <code>net.ipv4.ip_forward</code> to <code>1</code>. Its entrypoint finds the
+interfaces from their IP addresses, installs a default route through
+<code>10.10.30.1</code>, sets the <code>FORWARD</code> policy to <code>DROP</code>, permits app-to-public
+forwarding plus established replies, and adds the two <code>POSTROUTING</code>
+<code>MASQUERADE</code> rules.</p>
+<p>The app command overlays retain their Chapter 06 static routes and add:</p>
+<pre><code class="language-text">app-a-test default via 10.10.11.3
+app-b-test default via 10.10.12.3
+</code></pre>
+<h3 id="progress-checklist">Progress Checklist</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Start the cumulative Chapter 10 lab.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Confirm the three <code>nat-gateway</code> addresses and its connected routes.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Confirm IPv4 forwarding and the NAT gateway default route.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Show app traffic selecting <code>10.10.11.3</code> or <code>10.10.12.3</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Make an HTTP request to <code>nat-public-test</code> through NAT.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Observe <code>POSTROUTING</code> counters and the translated source in logs.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Remove the gateway default route, observe the failure, and recover it.</li>
+</ul>
+<h3 id="before-you-begin-terminal-roles">Before You Begin: Terminal Roles</h3>
+<p>Run commands from the repository root. Use two terminals for the main request:</p>
+<ul>
+<li><strong>Terminal A</strong> inspects <code>nat-gateway</code> routes, interfaces, and iptables.</li>
+<li><strong>Terminal B</strong> runs <code>curl</code> from <code>app-a-test</code> or <code>app-b-test</code>.</li>
+</ul>
+<p>The public-side test server is not an Internet service. It is the repository's
+<code>nat-public-test</code> service at <code>10.10.30.10:8080</code>. This gives you a repeatable
+destination and a server log that can show the translated source address.</p>
+<h3 id="tasks">Tasks</h3>
+<h4 id="task-1-start-the-nat-stage">Task 1: Start the NAT Stage</h4>
+<p><strong>Predict.</strong> Chapter 10 should contain the seven services from the earlier
+stages plus <code>nat-gateway</code> and <code>nat-public-test</code>, for nine services total.</p>
+<p><strong>Run.</strong> From the repository root:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 up -d --build
+bash scripts/compose-stage.sh 10 ps
+bash scripts/compose-stage.sh 10 config --services
+</code></pre>
+<p><strong>Observe.</strong> The service list should include:</p>
+<pre><code class="language-text">public-a-test
+public-b-test
+app-a-test
+app-b-test
+db-a-test
+db-b-test
+lab-router
+nat-gateway
+nat-public-test
+</code></pre>
+<p><code>nat-public-test</code> should be running its Python HTTP server. The exact order in
+<code>ps</code> is not important.</p>
+<p><strong>Explain.</strong> The two new services add an egress test network and a gateway;
+they do not replace <code>lab-router</code> or remove the original six networks.</p>
+<h4 id="task-2-inspect-the-nat-gateway-interfaces-and-routes">Task 2: Inspect the NAT Gateway Interfaces and Routes</h4>
+<p><strong>Predict.</strong> <code>nat-gateway</code> should have one address in each of <code>app_a</code>, <code>app_b</code>,
+and <code>nat_public</code>, plus connected routes for all three networks and a default
+route through <code>10.10.30.1</code>.</p>
+<p><strong>Run.</strong> In Terminal A:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 exec nat-gateway ip -o -4 addr show
+bash scripts/compose-stage.sh 10 exec nat-gateway ip route
+bash scripts/compose-stage.sh 10 exec nat-gateway \
+  sysctl net.ipv4.ip_forward
+</code></pre>
+<p><strong>Observe.</strong> Find these values; interface names may be <code>eth0</code>, <code>eth1</code>, and
+<code>eth2</code> in a different order:</p>
+<pre><code class="language-text">10.10.11.3/24
+10.10.12.3/24
+10.10.30.2/24
+default via 10.10.30.1
+net.ipv4.ip_forward = 1
+</code></pre>
+<p>The route table should also contain directly connected routes for:</p>
+<pre><code class="language-text">10.10.11.0/24
+10.10.12.0/24
+10.10.30.0/24
+</code></pre>
+<p><strong>Explain.</strong> The gateway needs an app-side ingress interface, a public-side
+egress interface, and forwarding enabled. The default route is used only when
+the destination does not match a more-specific connected or static route.</p>
+<h4 id="task-3-inspect-route-selection-from-app-a-test">Task 3: Inspect Route Selection From <code>app-a-test</code></h4>
+<p><strong>Predict.</strong> <code>app-a-test</code> should send the public-side test destination to
+<code>10.10.11.3</code>. It should still send a database-subnet destination to
+<code>lab-router</code> at <code>10.10.11.2</code> because that <code>/24</code> route is more specific.</p>
+<p><strong>Run.</strong> In Terminal B:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 exec app-a-test ip route
+bash scripts/compose-stage.sh 10 exec app-a-test \
+  ip route get 10.10.30.10
+bash scripts/compose-stage.sh 10 exec app-a-test \
+  ip route get 10.10.21.10
+</code></pre>
+<p><strong>Observe.</strong> The public-side lookup should look similar to:</p>
+<pre><code class="language-text">10.10.30.10 via 10.10.11.3 dev eth0 src 10.10.11.10
+</code></pre>
+<p>The database lookup should still use:</p>
+<pre><code class="language-text">10.10.21.10 via 10.10.11.2 dev eth0 src 10.10.11.10
+</code></pre>
+<p>Exact interface and extra kernel fields vary. The important fields are the
+next hops: <code>.11.3</code> for the NAT path and <code>.11.2</code> for the lab-router path.</p>
+<p><strong>Explain.</strong> Routing happens before NAT. The app chooses the next hop and
+interface first; only then can <code>nat-gateway</code> apply its <code>POSTROUTING</code>
+translation on the way out of <code>nat_public</code>.</p>
+<h4 id="task-4-make-an-http-request-through-the-gateway">Task 4: Make an HTTP Request Through the Gateway</h4>
+<p><strong>Predict.</strong> The request should start with source <code>10.10.11.10</code>, enter
+<code>nat-gateway</code> on <code>app_a</code>, leave through <code>nat_public</code>, and reach
+<code>nat-public-test</code> at <code>10.10.30.10:8080</code>. The response should return through
+conntrack to <code>app-a-test</code>.</p>
+<p><strong>Run.</strong> In Terminal B:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 exec -T app-a-test \
+  curl --fail --silent --show-error --connect-timeout 3 \
+  http://10.10.30.10:8080
+</code></pre>
+<p>Repeat from the other private application network:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 exec -T app-b-test \
+  curl --fail --silent --show-error --connect-timeout 3 \
+  http://10.10.30.10:8080
+</code></pre>
+<p><strong>Observe.</strong> Each command should print the HTML directory listing returned by
+Python's <code>http.server</code>. A successful response proves the route, forwarding,
+firewall, NAT, and return path all worked for that request.</p>
+<p><strong>Explain.</strong> The destination is on <code>nat_public</code>, but the app is on an internal
+network. The app did not connect directly to the public-side bridge; it sent to
+the next hop configured by the Chapter 10 command overlay.</p>
+<h4 id="task-5-observe-masquerade-counters-and-the-translated-source">Task 5: Observe MASQUERADE Counters and the Translated Source</h4>
+<p><strong>Predict.</strong> The <code>POSTROUTING</code> rules should contain one MASQUERADE rule for
+each app subnet. Their counters should increase after the requests.</p>
+<p><strong>Run.</strong> In Terminal A, inspect the rules before and after one request:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 exec nat-gateway \
+  iptables -t nat -L POSTROUTING -n -v --line-numbers
+</code></pre>
+<p>Run this in Terminal B:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 exec -T app-a-test \
+  curl --fail --silent --show-error --connect-timeout 3 \
+  http://10.10.30.10:8080 &gt;/dev/null
+</code></pre>
+<p>Then inspect the rules again and read the public-side server log:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 exec nat-gateway \
+  iptables -t nat -L POSTROUTING -n -v --line-numbers
+bash scripts/compose-stage.sh 10 logs --tail=5 nat-public-test
+</code></pre>
+<p><strong>Observe.</strong> The rule for source <code>10.10.11.0/24</code> should have a larger packet
+and byte count after the request. The <code>nat-public-test</code> log should show a
+client address of <code>10.10.30.2</code>, not <code>10.10.11.10</code>. Timestamps and exact byte
+counts vary.</p>
+<p>If the counters stay at zero, return to Task 3. Check the route and selected
+interface before changing the iptables rules.</p>
+<p><strong>Explain.</strong> The source rewrite happened at the NAT gateway's public-facing
+egress. Conntrack remembers that <code>10.10.30.2</code> represents the original private
+flow, so the reply can be translated back to <code>10.10.11.10</code>.</p>
+<h4 id="task-6-inspect-the-gateways-forwarding-policy">Task 6: Inspect the Gateway's Forwarding Policy</h4>
+<p><strong>Predict.</strong> The NAT gateway should default to dropping forwarded traffic,
+then allow app interfaces to the public interface and established return
+traffic back to the apps.</p>
+<p><strong>Run.</strong> In Terminal A:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 exec nat-gateway \
+  iptables -L FORWARD -n -v --line-numbers
+bash scripts/compose-stage.sh 10 exec nat-gateway \
+  iptables -t nat -L POSTROUTING -n -v --line-numbers
+</code></pre>
+<p><strong>Observe.</strong> Find <code>policy DROP</code>, an <code>ESTABLISHED,RELATED</code> rule, app-to-public
+allow rules, and the two source-subnet MASQUERADE rules. The forward counters
+should reflect the HTTP requests.</p>
+<p><strong>Explain.</strong> NAT is not the only requirement. The gateway must route the
+packet, permit forwarding, rewrite the source on egress, and retain conntrack
+state for the response.</p>
+<h3 id="expected-observations">Expected Observations</h3>
+<p>The completed data path should be:</p>
+<pre><code class="language-text">app-a-test 10.10.11.10
+        |
+        | default via 10.10.11.3
+        v
+nat-gateway 10.10.11.3
+        |
+        | route to nat_public, MASQUERADE
+        v
+nat-gateway 10.10.30.2
+        |
+        v
+nat-public-test 10.10.30.10:8080
+</code></pre>
+<p>The important before-and-after evidence is:</p>
+<pre><code class="language-text">route lookup:      next hop 10.10.11.3
+POSTROUTING rule:  source 10.10.11.0/24 counter increases
+server log:        client 10.10.30.2
+curl:              HTTP response from nat-public-test
+</code></pre>
+<p>For a destination in the original lab, routing remains separate from NAT. For
+example, <code>10.10.21.10</code> still selects <code>10.10.11.2</code> from <code>app-a-test</code>; it does
+not select the NAT gateway merely because a default route exists.</p>
+<h3 id="break-it-remove-the-nat-gateway-default-route">Break It: Remove the NAT Gateway Default Route</h3>
+<p>This is a controlled runtime failure. It removes one route inside
+<code>nat-gateway</code> and leaves the MASQUERADE rules in place.</p>
+<p>Do not use <code>10.10.30.10</code> as the break target: that address is directly
+connected to <code>nat-gateway</code> through <code>nat_public</code>, so its connected route does not
+need the default route. Use a reserved external address instead.</p>
+<p><strong>Predict.</strong> The app should still select <code>10.10.11.3</code>, but <code>nat-gateway</code> will
+have no route for an external destination. The request should fail before a
+packet can reach <code>POSTROUTING</code>, so the MASQUERADE counter should not increase.</p>
+<p><strong>Run.</strong> Record the NAT counters, remove the gateway default route, and test
+from <code>app-a-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 exec nat-gateway \
+  iptables -t nat -L POSTROUTING -n -v --line-numbers
+bash scripts/compose-stage.sh 10 exec nat-gateway \
+  ip route delete default via 10.10.30.1
+bash scripts/compose-stage.sh 10 exec nat-gateway ip route
+bash scripts/compose-stage.sh 10 exec -T app-a-test \
+  curl --silent --show-error --connect-timeout 2 \
+  http://198.51.100.10:8080
+bash scripts/compose-stage.sh 10 exec nat-gateway \
+  iptables -t nat -L POSTROUTING -n -v --line-numbers
+</code></pre>
+<p><strong>Observe.</strong> The app still has its default route through <code>10.10.11.3</code>, but the
+gateway's route table no longer has <code>default via 10.10.30.1</code>. The curl should
+fail, and the MASQUERADE counter should remain unchanged for this failed
+external attempt.</p>
+<p><strong>Explain.</strong> The packet reached the NAT gateway because the app route was
+correct. It could not be forwarded toward an external destination because the
+gateway had no matching route. NAT cannot repair a missing route.</p>
+<p><strong>Recovery.</strong> Recreate only the gateway. Its entrypoint reinstalls the default
+route and the firewall/NAT rules:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 up -d --force-recreate nat-gateway
+bash scripts/compose-stage.sh 10 exec nat-gateway ip route
+bash scripts/compose-stage.sh 10 exec -T app-a-test \
+  curl --fail --silent --show-error --connect-timeout 3 \
+  http://10.10.30.10:8080 &gt;/dev/null
+</code></pre>
+<p>The final request should succeed again. The gateway route and NAT state have
+been restored by container startup.</p>
+<h3 id="checkpoint-definition-of-done">Checkpoint: Definition of Done</h3>
+<p>You are ready for Chapter 11 when all of these are true:</p>
+<ul>
+<li><code>nat-gateway</code> has <code>10.10.11.3</code>, <code>10.10.12.3</code>, and <code>10.10.30.2</code>;</li>
+<li>its route table has connected app/public routes and <code>default via 10.10.30.1</code>;</li>
+<li><code>net.ipv4.ip_forward</code> is <code>1</code>;</li>
+<li><code>app-a-test</code> selects <code>10.10.11.3</code> for <code>10.10.30.10</code>;</li>
+<li><code>app-a-test</code> still selects <code>10.10.11.2</code> for <code>10.10.21.10</code>;</li>
+<li><code>curl</code> reaches <code>nat-public-test</code> on TCP <code>8080</code>;</li>
+<li><code>POSTROUTING</code> counters increase after the request;</li>
+<li>the server log identifies <code>10.10.30.2</code> as the client;</li>
+<li>deleting the gateway default route breaks the external test and recreating
+<code>nat-gateway</code> restores it.</li>
+</ul>
+<p>Mark the matching items in the progress checklist above as you complete them.</p>
+<p>The repository's automated NAT helper runs against the final cumulative stage,
+not only Chapter 10. After the later chapters are present, its commands are:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 17 up -d --build --wait
+bash scripts/test-nat.sh
+</code></pre>
+<p>It repeats the app request and gateway route/NAT inspections used here.</p>
+<h3 id="clean-up">Clean Up</h3>
+<p>Remove the cumulative Chapter 10 resources:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 10 down
+</code></pre>
+<h3 id="conclusion-next-chapter">Conclusion / Next Chapter</h3>
+<p>The private application networks now have a deliberate egress path. Route
+selection sends app default traffic to <code>nat-gateway</code>, forwarding moves it to
+<code>nat_public</code>, and MASQUERADE makes the public-side source address routable
+while conntrack preserves the return path.</p>
+<p>Chapter 11 introduces Docker DNS. You will compare service-name resolution
+with the raw IP paths you traced and translated in this chapter.</p>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>What happens first: routing or NAT?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 10 exec app-a-test ip route get 10.10.30.10</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 10 exec app-a-test ip route get 10.10.30.10">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>Routing chooses the egress interface and next hop first. MASQUERADE rewrites the source afterward; it does not choose a route.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="Routing chooses the egress path. MASQUERADE then rewrites the source address for traffic leaving through the selected external interface."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>Does MASQUERADE decide which interface a private packet should leave through?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes, NAT performs routing</button><button type="button" data-question-choice="1">No, routing chooses the path first</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="10" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>Route first, translate second.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/private-networks/"><span>Chapter 09</span><strong>Private Networks</strong><p>Mark the application and database bridges as internal so their normal Docker egress path disappears.</p></a><a href="/labs/docker-networking/docker-dns/"><span>Chapter 11</span><strong>Docker DNS</strong><p>Separate raw IP connectivity from hostname resolution inside user-defined Docker networks.</p></a><a href="/labs/docker-networking/iptables-firewall/"><span>Chapter 08</span><strong>Stateful Firewalling</strong><p>Replace unrestricted forwarding with a default-deny policy and allow only the ports the application design requires.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/docker-dns/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

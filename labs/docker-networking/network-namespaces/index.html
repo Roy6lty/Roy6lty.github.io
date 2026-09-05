@@ -1,0 +1,394 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Identify the loopback, container interface, IP address, connected route, neighbor table, and how neighbors change after traffic. Look inside the Linux…"><meta name="theme-color" content="#101515"><title>Docker Network Namespaces &amp; Interfaces — Hands-on Lab | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/network-namespaces/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="Docker Network Namespaces &amp; Interfaces — Hands-on Lab | Ayo Olowoleru"><meta property="og:description" content="Identify the loopback, container interface, IP address, connected route, neighbor table, and how neighbors change after traffic. Look inside the Linux…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/network-namespaces/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"Network Namespaces and Interfaces","item":"https://ayo-olowoleru.xyz/labs/docker-networking/network-namespaces/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Docker Network Namespaces & Interfaces — Hands-on Lab","description":"Identify the loopback, container interface, IP address, connected route, neighbor table, and how neighbors change after traffic. Look inside the Linux…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/network-namespaces/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["network namespace","veth pair","loopback","neighbor table"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>FOUNDATION</span><span>Chapter 03</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/03-network-namespaces/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 03 / FOUNDATION</span><h1>Network Namespaces and Interfaces<br><em>Look inside the Linux networking view Docker created for one container before introducing routing.</em></h1><p>Identify the loopback, container interface, IP address, connected route, neighbor table, and how neighbors change after traffic.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>03<small>/ 17</small></strong><p>Every container starts with its own local networking environment.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>03 / 17</span></div><div class="chapter-rail-progress"><span style="width:17.6%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link is-current" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/03-network-namespaces/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 03 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Adds no topology. This chapter inspects the six isolated bridges created in chapter 02.</p></div><div><span>Lab state</span><p>6 isolated bridges / inspect one container namespace at a time</p><div class="chapter-tags"><span>network namespace</span><span>veth pair</span><span>loopback</span><span>neighbor table</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>Every container starts with its own local networking environment.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/03-network-namespaces/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-03.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-03.svg" alt="Network Namespaces and Interfaces topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Start the inspection stage</h3><p>Bring up the previous topology and list its services.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 03 up -d</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 03 up -d">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 03 ps</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 03 ps">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Inspect the namespace</h3><p>Read the interfaces and route table inside app-a-test.</p><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 03 exec app-a-test ip addr</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 03 exec app-a-test ip addr">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 03 exec app-a-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 03 exec app-a-test ip route">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Generate a neighbor entry</h3><p>Inspect the neighbor table, ping the local Docker gateway, then inspect it again.</p><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 03 exec app-a-test ip neigh</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 03 exec app-a-test ip neigh">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 03 exec app-a-test ping -c 2 10.10.11.1</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 03 exec app-a-test ping -c 2 10.10.11.1">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 03 exec app-a-test ip neigh</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 03 exec app-a-test ip neigh">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Ask Linux how it would route toward another subnet before a router exists.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 03 exec app-a-test ip route get 10.10.12.10</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 03 exec app-a-test ip route get 10.10.12.10">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 03 down</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#key-concepts">Key Concepts</a><a href="#what-is-a-network-namespace">What Is a Network Namespace?</a><a href="#virtual-ethernet-interfaces">Virtual Ethernet Interfaces</a><a href="#loopback-interface">Loopback Interface</a><a href="#routing-table">Routing Table</a><a href="#neighbor-table">Neighbor Table</a><a href="#goal">Goal</a></nav><div class="lesson-notes" data-static-notes><h3 id="key-concepts">Key Concepts</h3>
+<h4 id="what-is-a-network-namespace">What Is a Network Namespace?</h4>
+<p>A <strong>network namespace</strong> gives a process its own isolated view of the Linux
+networking stack.</p>
+<p>A network namespace can have its own:</p>
+<ul>
+<li>network interfaces;</li>
+<li>loopback interface;</li>
+<li>IP addresses;</li>
+<li>routing table;</li>
+<li>neighbor table;</li>
+<li>firewall rules;</li>
+<li>sockets.</li>
+</ul>
+<p>Docker creates a network namespace for each container.</p>
+<p>This is why running:</p>
+<pre><code class="language-bash">ip addr
+</code></pre>
+<p>inside two different containers can show different interfaces and IP addresses
+even though both containers are running on the same Linux host.</p>
+<p>Conceptually:</p>
+<pre><code class="language-text">Linux Host
+|
++-- Container A network namespace
+|   |
+|   +-- lo
+|   +-- eth0
+|   +-- routes
+|   +-- neighbor table
+|
++-- Container B network namespace
+    |
+    +-- lo
+    +-- eth0
+    +-- routes
+    +-- neighbor table
+</code></pre>
+<p>Each container sees its own networking environment.</p>
+<hr/>
+<h4 id="virtual-ethernet-interfaces">Virtual Ethernet Interfaces</h4>
+<p>A container's network interface is usually one end of a <strong>virtual Ethernet
+pair</strong>, commonly called a <code>veth</code> pair.</p>
+<p>A veth pair behaves like a virtual network cable:</p>
+<pre><code class="language-text">Container namespace                    Host namespace
+
+eth0
+ |
+ | virtual Ethernet pair
+ |
+ v
+vethXXXXXXXX
+ |
+ v
+Docker bridge
+</code></pre>
+<p>One end is moved into the container's network namespace and usually appears as:</p>
+<pre><code class="language-text">eth0
+</code></pre>
+<p>The other end remains on the host and is connected to the Docker bridge.</p>
+<p>This is how packets move between the container and the Docker bridge.</p>
+<hr/>
+<h4 id="loopback-interface">Loopback Interface</h4>
+<p>Every container network namespace also has a loopback interface:</p>
+<pre><code class="language-text">lo
+</code></pre>
+<p>with the IPv4 address:</p>
+<pre><code class="language-text">127.0.0.1
+</code></pre>
+<p>The loopback interface allows processes inside the same network namespace to
+communicate with themselves.</p>
+<p>For example:</p>
+<pre><code class="language-text">127.0.0.1:8000
+</code></pre>
+<p>refers to a service running inside that same container.</p>
+<p>It does not refer to the Docker host or another container.</p>
+<hr/>
+<h4 id="routing-table">Routing Table</h4>
+<p>Every network namespace has its own routing table.</p>
+<p>The routing table tells the Linux kernel:</p>
+<blockquote>
+<p>Where should this packet go, and which interface or next hop should be used?</p>
+</blockquote>
+<p>For example:</p>
+<pre><code class="language-text">10.10.11.0/24 dev eth0 scope link src 10.10.11.10
+</code></pre>
+<p>means the <code>10.10.11.0/24</code> network is directly reachable through <code>eth0</code>.</p>
+<hr/>
+<h4 id="neighbor-table">Neighbor Table</h4>
+<p>Linux keeps a <strong>neighbor table</strong> containing learned information about local
+Layer-2 neighbors.</p>
+<p>For IPv4, these entries are normally learned using ARP.</p>
+<p>The command is:</p>
+<pre><code class="language-bash">ip neigh
+</code></pre>
+<p>An entry may look like:</p>
+<pre><code class="language-text">10.10.11.1 dev eth0 lladdr 02:42:xx:xx:xx:xx REACHABLE
+</code></pre>
+<p>This means Linux has learned:</p>
+<pre><code class="language-text">10.10.11.1
+</code></pre>
+<p>maps to the MAC address:</p>
+<pre><code class="language-text">02:42:xx:xx:xx:xx
+</code></pre>
+<p>on <code>eth0</code>.</p>
+<p>The neighbor table is <strong>not a list of every machine on the network</strong>.</p>
+<p>It is a cache of local neighbors that the kernel has learned about while
+resolving next-hop addresses or exchanging local network traffic.</p>
+<hr/>
+<h3 id="goal">Goal</h3>
+<p>Inspect the network namespace Docker created for a container and identify:</p>
+<ul>
+<li>the loopback interface;</li>
+<li>the container's network interface;</li>
+<li>its IP address;</li>
+<li>its connected route;</li>
+<li>its neighbor table;</li>
+<li>how the neighbor table changes after network traffic is generated.</li>
+</ul>
+<p>This chapter changes no network topology.</p>
+<p>We are inspecting the networking environment created in Chapter 02 before
+introducing Linux capabilities and routing.</p>
+<hr/>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>No new network devices or routes are added.</p>
+<p>The topology remains:</p>
+<pre><code class="language-text">+-------------------------+      +-------------------------+
+| public_a 10.10.1.0/24   |      | public_b 10.10.2.0/24   |
+|                         |      |                         |
+| public-a-test           |      | public-b-test           |
+| 10.10.1.10              |      | 10.10.2.10              |
++-------------------------+      +-------------------------+
+
+
++-------------------------+      +-------------------------+
+| app_a 10.10.11.0/24     |      | app_b 10.10.12.0/24     |
+|                         |      |                         |
+| app-a-test              |      | app-b-test              |
+| 10.10.11.10             |      | 10.10.12.10             |
++-------------------------+      +-------------------------+
+
+
++-------------------------+      +-------------------------+
+| db_a 10.10.21.0/24      |      | db_b 10.10.22.0/24      |
+|                         |      |                         |
+| db-a-test               |      | db-b-test               |
+| 10.10.21.10             |      | 10.10.22.10             |
++-------------------------+      +-------------------------+
+</code></pre>
+<p>Each test container is still on a separate Docker bridge network.</p>
+<p>There is still no router connecting the six networks.</p>
+<hr/>
+<h3 id="tasks">Tasks</h3>
+<ol>
+<li>Start the Chapter 03 lab.</li>
+<li>Inspect the interfaces inside <code>app-a-test</code>.</li>
+<li>Inspect its routing table.</li>
+<li>Inspect its neighbor table.</li>
+<li>Generate traffic to a local neighbor.</li>
+<li>Inspect the neighbor table again.</li>
+<li>Ask Linux how it would route traffic toward another subnet.</li>
+</ol>
+<hr/>
+<h3 id="checkpoint">Checkpoint</h3>
+<h4 id="1-start-the-lab">1. Start the Lab</h4>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 up -d
+</code></pre>
+<p>Confirm the containers are running:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 ps
+</code></pre>
+<hr/>
+<h3 id="inspect-the-network-interfaces">Inspect the Network Interfaces</h3>
+<p>Run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 exec app-a-test ip addr
+</code></pre>
+<p>You should see something similar to:</p>
+<pre><code class="language-text">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 ...
+    inet 127.0.0.1/8 scope host lo
+
+2: eth0@if...: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 ...
+    inet 10.10.11.10/24 brd 10.10.11.255 scope global eth0
+</code></pre>
+<p>The important interfaces are:</p>
+<pre><code class="language-text">lo
+= loopback interface
+
+eth0
+= container network interface
+</code></pre>
+<p>The address:</p>
+<pre><code class="language-text">10.10.11.10/24
+</code></pre>
+<p>belongs to <code>app-a-test</code>.</p>
+<blockquote>
+<p>Note: the Alpine image initially uses BusyBox's lightweight <code>ip</code> command.
+Some BusyBox versions do not support <code>ip -br addr</code>, so this course uses
+<code>ip addr</code> unless the full <code>iproute2</code> package has been installed.</p>
+</blockquote>
+<hr/>
+<h3 id="inspect-the-routing-table">Inspect the Routing Table</h3>
+<p>Run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 exec app-a-test ip route
+</code></pre>
+<p>Expected output should include:</p>
+<pre><code class="language-text">10.10.11.0/24 dev eth0 scope link src 10.10.11.10
+</code></pre>
+<p>Breakdown:</p>
+<pre><code class="language-text">10.10.11.0/24
+= destination network
+
+dev eth0
+= packets for this network use eth0
+
+scope link
+= this network is directly connected
+
+src 10.10.11.10
+= use this IP as the source address
+</code></pre>
+<p>The kernel does not need a router to reach another address inside:</p>
+<pre><code class="language-text">10.10.11.0/24
+</code></pre>
+<p>because that network is directly connected.</p>
+<hr/>
+<h3 id="inspect-the-neighbor-table">Inspect the Neighbor Table</h3>
+<p>Run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 exec app-a-test ip neigh
+</code></pre>
+<p>The table may initially be empty or contain previously learned entries.</p>
+<p>That is normal.</p>
+<p>Linux does not automatically maintain a complete inventory of every device on
+the network.</p>
+<hr/>
+<h3 id="generate-local-network-traffic">Generate Local Network Traffic</h3>
+<p>The Docker bridge gateway for <code>app_a</code> is:</p>
+<pre><code class="language-text">10.10.11.1
+</code></pre>
+<p>Ping it:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 exec app-a-test ping -c 2 10.10.11.1
+</code></pre>
+<p>The destination is inside the same <code>/24</code> network:</p>
+<pre><code class="language-text">app-a-test
+10.10.11.10
+    |
+    | same subnet
+    v
+10.10.11.1
+Docker bridge gateway
+</code></pre>
+<p>Before sending the Ethernet frame, Linux needs the destination's MAC address.</p>
+<p>It therefore performs ARP roughly like:</p>
+<pre><code class="language-text">Who has 10.10.11.1?
+Tell 10.10.11.10.
+</code></pre>
+<p>The gateway replies with its MAC address.</p>
+<hr/>
+<h3 id="inspect-the-neighbor-table-again">Inspect the Neighbor Table Again</h3>
+<p>Run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 exec app-a-test ip neigh
+</code></pre>
+<p>You should now see an entry similar to:</p>
+<pre><code class="language-text">10.10.11.1 dev eth0 lladdr 02:42:xx:xx:xx:xx REACHABLE
+</code></pre>
+<p>This demonstrates the relationship:</p>
+<pre><code class="language-text">routing table
+     |
+     | destination is local
+     v
+ARP
+     |
+     | resolve IP to MAC
+     v
+neighbor table
+     |
+     v
+Ethernet frame sent
+</code></pre>
+<hr/>
+<h3 id="inspect-a-route-to-another-subnet">Inspect a Route to Another Subnet</h3>
+<p>Now ask the kernel how it would reach <code>app-b-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 exec app-a-test \
+  ip route get 10.10.12.10
+</code></pre>
+<p><code>app-b-test</code> has the address:</p>
+<pre><code class="language-text">10.10.12.10
+</code></pre>
+<p>and lives on:</p>
+<pre><code class="language-text">app_b
+10.10.12.0/24
+</code></pre>
+<p>while the command is being run from:</p>
+<pre><code class="language-text">app-a-test
+10.10.11.10
+</code></pre>
+<p>which lives on:</p>
+<pre><code class="language-text">app_a
+10.10.11.0/24
+</code></pre>
+<p>These are different subnets.</p>
+<p>At this stage, there is no lab router and no specific route connecting:</p>
+<pre><code class="language-text">10.10.11.0/24
+</code></pre>
+<p>to:</p>
+<pre><code class="language-text">10.10.12.0/24
+</code></pre>
+<p>The important observation is that there is no valid lab routing path between
+the two networks yet.</p>
+<hr/>
+<h3 id="expected-observation">Expected Observation</h3>
+<p>The container has its own networking state:</p>
+<pre><code class="language-text">app-a-test network namespace
+|
++-- lo
+|   +-- 127.0.0.1
+|
++-- eth0
+|   +-- 10.10.11.10/24
+|
++-- routing table
+|   +-- 10.10.11.0/24 is directly connected
+|
++-- neighbor table
+    +-- learned local IP-to-MAC mappings
+</code></pre>
+<p>A local destination such as:</p>
+<pre><code class="language-text">10.10.11.1
+</code></pre>
+<p>can be reached directly through <code>eth0</code>.</p>
+<p>A remote destination such as:</p>
+<pre><code class="language-text">10.10.12.10
+</code></pre>
+<p>belongs to another subnet and will eventually require a router.</p>
+<hr/>
+<h3 id="break-it">Break It</h3>
+<p>Try to reach <code>app-b-test</code> from <code>app-a-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 exec app-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p>The important addresses are:</p>
+<pre><code class="language-text">app-a-test
+10.10.11.10
+network: app_a
+
+app-b-test
+10.10.12.10
+network: app_b
+</code></pre>
+<p>The failure is expected because the containers are on different Docker bridge
+networks and no router currently exists between them.</p>
+<p>Then inspect the routing table again:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 exec app-a-test ip route
+</code></pre>
+<p>and inspect the neighbor table:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 exec app-a-test ip neigh
+</code></pre>
+<p>Notice that learning MAC addresses in the neighbor table does not solve
+communication between different subnets.</p>
+<p>ARP operates on the local Layer-2 network.</p>
+<p>Routing is required to move traffic between Layer-3 networks.</p>
+<p>This distinction becomes important when the lab router is introduced.</p>
+<hr/>
+<h3 id="key-mental-model">Key Mental Model</h3>
+<pre><code class="language-text">Interface
+= where the container sends and receives packets
+
+Routing table
+= which interface or next hop should be used for a destination
+
+Neighbor table
+= learned MAC address for a local next hop
+</code></pre>
+<p>In packet-flow order:</p>
+<pre><code class="language-text">Destination IP
+      |
+      v
+Routing table
+      |
+      v
+Select interface / next hop
+      |
+      v
+Neighbor table / ARP
+      |
+      v
+Resolve next-hop MAC address
+      |
+      v
+Send Ethernet frame
+</code></pre>
+<hr/>
+<h3 id="clean-up">Clean Up</h3>
+<p>Remove the resources created for this stage:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 03 down
+</code></pre>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>What changed after pinging 10.10.11.1?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 03 exec app-a-test ip neigh</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 03 exec app-a-test ip neigh">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>Traffic can populate the neighbor cache. It is evidence of learned next-hop information, not a complete inventory of every device.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="The neighbor table is runtime evidence of Layer-2 resolution. It is populated as destinations or next hops are actually used."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>Before app-a-test sends any traffic, should `ip neigh` already contain every container on its Docker network?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes, Docker preloads them</button><button type="button" data-question-choice="1">No, neighbors are learned as needed</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="03" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>Every container starts with its own local networking environment.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/cidr-bridges/"><span>Chapter 02</span><strong>CIDR and Bridge Networks</strong><p>Give the lab real boundaries with six user-defined Docker bridge networks and explicit /24 address ranges.</p></a><a href="/labs/docker-networking/capabilities/"><span>Chapter 04</span><strong>Linux Capabilities</strong><p>Permission is part of the network. Root inside a container still needs the specific capability to change routes.</p></a><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/capabilities/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

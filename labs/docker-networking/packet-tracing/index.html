@@ -1,0 +1,247 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Use tcpdump to prove where a packet enters and leaves the router. Turn a route-table prediction into evidence by watching ingress, forwarded egress, and the…"><meta name="theme-color" content="#101515"><title>Packet Tracing in Docker with tcpdump — Hands-on Lab | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/packet-tracing/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="Packet Tracing in Docker with tcpdump — Hands-on Lab | Ayo Olowoleru"><meta property="og:description" content="Use tcpdump to prove where a packet enters and leaves the router. Turn a route-table prediction into evidence by watching ingress, forwarded egress, and the…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/packet-tracing/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"Packet Tracing","item":"https://ayo-olowoleru.xyz/labs/docker-networking/packet-tracing/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Packet Tracing in Docker with tcpdump — Hands-on Lab","description":"Use tcpdump to prove where a packet enters and leaves the router. Turn a route-table prediction into evidence by watching ingress, forwarded egress, and the…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/packet-tracing/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["ingress","egress","tcpdump","packet evidence"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>ROUTING FABRIC</span><span>Chapter 07</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/07-packet-tracing/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 07 / ROUTING FABRIC</span><h1>Packet Tracing<br><em>Turn a route-table prediction into evidence by watching ingress, forwarded egress, and the reply on the router.</em></h1><p>Use tcpdump to prove where a packet enters and leaves the router.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>07<small>/ 17</small></strong><p>A packet path is a sequence of observable interface events.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>07 / 17</span></div><div class="chapter-rail-progress"><span style="width:41.2%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link is-current" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/07-packet-tracing/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 07 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Adds no service. It adds an observation workflow using the lab-tools image from chapter 04.</p></div><div><span>Lab state</span><p>Routed six-subnet topology / tcpdump used as packet-path evidence</p><div class="chapter-tags"><span>ingress</span><span>egress</span><span>tcpdump</span><span>packet evidence</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>A packet path is a sequence of observable interface events.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/07-packet-tracing/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-07.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-07.svg" alt="Packet Tracing topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Start the routed topology</h3><p>Use the accumulated stage through chapter 07.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 07 up -d</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 07 up -d">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Capture on every interface</h3><p>Run the capture in one terminal so the router can show both sides of the flow.</p><div class="series-command"><div class="series-command-meta"><span>HOST → lab-router</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 07 exec lab-router tcpdump -i any -nn icmp</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 07 exec lab-router tcpdump -i any -nn icmp">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Generate the packet</h3><p>From another terminal, ping app-b from public-a and match each capture line to the route.</p><div class="series-command"><div class="series-command-meta"><span>HOST → public-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 07 exec public-a-test ping -c 2 10.10.12.10</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 07 exec public-a-test ping -c 2 10.10.12.10">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Capture only one router interface and explain why half of the conversation disappears.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → lab-router</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 07 exec lab-router tcpdump -i eth0 -nn icmp</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 07 exec lab-router tcpdump -i eth0 -nn icmp">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 07 down</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#key-concepts">Key Concepts</a><a href="#a-packet-has-a-path">A Packet Has a Path</a><a href="#what-does-tcpdump-show">What Does tcpdump Show?</a><a href="#request-and-reply-packets">Request and Reply Packets</a><a href="#goal">Goal</a><a href="#progression-from-chapter-06">Progression From Chapter 06</a><a href="#what-this-stage-adds">What This Stage Adds</a></nav><div class="lesson-notes" data-static-notes><h3 id="key-concepts">Key Concepts</h3>
+<h4 id="a-packet-has-a-path">A Packet Has a Path</h4>
+<p>In Chapter 06, <code>public-a-test</code> learned to send traffic for the remote
+application subnet to <code>lab-router</code>:</p>
+<pre><code class="language-text">public-a-test 10.10.1.10
+        |
+        | next hop 10.10.1.2
+        v
+lab-router
+        |
+        | connected route to app_b
+        v
+app-b-test 10.10.12.10
+</code></pre>
+<p>The packet enters the router through its <code>public_a</code> interface. It leaves
+through the router interface attached to <code>app_b</code>. These are the router's
+<strong>ingress</strong> and <strong>egress</strong> points for the request.</p>
+<p>The reply takes the reverse path:</p>
+<pre><code class="language-text">app-b-test -&gt; lab-router on app_b -&gt; lab-router on public_a -&gt; public-a-test
+</code></pre>
+<h4 id="what-does-tcpdump-show">What Does <code>tcpdump</code> Show?</h4>
+<p><code>tcpdump</code> observes packets seen by a network interface. In this chapter:</p>
+<ul>
+<li><code>-i any</code> observes all interfaces in the <code>lab-router</code> network namespace;</li>
+<li><code>-nn</code> leaves IP addresses and port numbers numeric, without DNS or service
+name lookups;</li>
+<li><code>icmp</code> limits the capture to the ICMP packets generated by <code>ping</code>.</li>
+</ul>
+<p>The capture proves that packets crossed an interface. It does not prove that
+an application accepted a payload. A successful <code>ping</code> adds evidence that the
+destination replied.</p>
+<h4 id="request-and-reply-packets">Request and Reply Packets</h4>
+<p>An ICMP echo exchange contains at least these two packet types:</p>
+<pre><code class="language-text">type 8  = echo request
+type 0  = echo reply
+</code></pre>
+<p>For this lab, the useful fields are the source address, destination address,
+packet type, and interface where the line was captured. Interface numbering
+can vary; the addresses identify the role of each side.</p>
+<h3 id="goal">Goal</h3>
+<p>Use <code>tcpdump</code> inside <code>lab-router</code> to prove where a packet enters and leaves the
+router. By the end, you should be able to identify:</p>
+<ul>
+<li>the request entering from <code>public_a</code>;</li>
+<li>the request leaving toward <code>app_b</code>;</li>
+<li>the reply entering from <code>app_b</code>;</li>
+<li>the reply leaving toward <code>public_a</code>.</li>
+</ul>
+<h3 id="progression-from-chapter-06">Progression From Chapter 06</h3>
+<p>Chapter 06 added static routes to the six endpoint containers. The router was
+already connected to all six subnets and had IPv4 forwarding enabled, but the
+packet path was visible only indirectly through <code>ping</code> and <code>ip route get</code>.</p>
+<p>Chapter 07 adds no route and does not change the topology. It adds an
+observation method for the path that Chapter 06 built:</p>
+<pre><code class="language-text">Chapter 06: route selection and reachability
+        |
+        v
+Chapter 07: packet-level evidence at router interfaces
+</code></pre>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>No service or network is added. <code>chapters/07-packet-tracing/compose.yaml</code>
+contains <code>services: {}</code>. The stage runner still loads all earlier stages, so
+the lab contains these services:</p>
+<pre><code class="language-text">public-a-test   10.10.1.10
+public-b-test   10.10.2.10
+app-a-test      10.10.11.10
+app-b-test      10.10.12.10
+db-a-test       10.10.21.10
+db-b-test       10.10.22.10
+lab-router      10.10.1.2, 10.10.2.2, 10.10.11.2,
+                10.10.12.2, 10.10.21.2, 10.10.22.2
+</code></pre>
+<p>The reusable lab-tools image and the Chapter 05 router image already contain
+the tools needed here: <code>ping</code>, <code>ip</code>, and <code>tcpdump</code>.</p>
+<h3 id="progress-checklist">Progress Checklist</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Start the cumulative Chapter 07 lab.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Confirm that the source route uses <code>10.10.1.2</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Capture the request and reply on all router interfaces.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Label ingress and egress from the capture addresses.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Capture on one interface and explain the missing half of the exchange.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Recover the observation setup and complete the checkpoint.</li>
+</ul>
+<h3 id="before-you-begin-terminal-roles">Before You Begin: Terminal Roles</h3>
+<p>Run all commands from the repository root:</p>
+<pre><code class="language-text">/home/olowoleru/projects/docker-subnet
+</code></pre>
+<p>Use two terminal windows for the main experiment:</p>
+<ul>
+<li><strong>Terminal A</strong> runs the long-lived <code>tcpdump</code> capture on <code>lab-router</code>.</li>
+<li><strong>Terminal B</strong> generates traffic from <code>public-a-test</code>.</li>
+</ul>
+<p>Do not type the Terminal B command until Terminal A is waiting for packets.
+Stop <code>tcpdump</code> with <code>Ctrl-C</code> after the two ping replies appear.</p>
+<h3 id="tasks">Tasks</h3>
+<h4 id="task-1-start-the-lab">Task 1: Start the Lab</h4>
+<p><strong>Predict.</strong> The Chapter 07 Compose file is empty, so predict that the stage
+will still have seven services and the Chapter 06 routes will still work.</p>
+<p><strong>Run.</strong> In either terminal, from the repository root:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 up -d --build
+bash scripts/compose-stage.sh 07 ps
+</code></pre>
+<p><strong>Observe.</strong> The <code>ps</code> output should include the six <code>*-test</code> services and
+<code>lab-router</code>, all with a running status. The exact container names and
+interface names are not important.</p>
+<p><strong>Explain.</strong> There is no new container because this chapter changes how we
+observe the existing route, not how packets are routed.</p>
+<h4 id="task-2-confirm-the-route-you-will-trace">Task 2: Confirm the Route You Will Trace</h4>
+<p><strong>Predict.</strong> Traffic from <code>public-a-test</code> to <code>10.10.12.10</code> should use the
+router's <code>public_a</code> address, <code>10.10.1.2</code>, rather than Docker's bridge gateway,
+<code>10.10.1.1</code>.</p>
+<p><strong>Run.</strong> In Terminal B:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 exec public-a-test \
+  ip route get 10.10.12.10
+bash scripts/compose-stage.sh 07 exec public-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p><strong>Observe.</strong> The route lookup should contain a line similar to:</p>
+<pre><code class="language-text">10.10.12.10 via 10.10.1.2 dev eth0 src 10.10.1.10
+</code></pre>
+<p>The ping should report two replies and <code>0% packet loss</code>. Extra fields such as
+<code>uid 0</code> may appear.</p>
+<p><strong>Explain.</strong> This tells you what to look for in the capture: the request starts
+at <code>10.10.1.10</code>, targets <code>10.10.12.10</code>, and first reaches <code>lab-router</code> at
+<code>10.10.1.2</code>.</p>
+<h4 id="task-3-capture-the-forward-path-and-return-path">Task 3: Capture the Forward Path and Return Path</h4>
+<p><strong>Predict.</strong> One ping request should be visible entering <code>lab-router</code> from
+<code>public_a</code> and leaving it toward <code>app_b</code>. The echo reply should appear in the
+opposite direction.</p>
+<p><strong>Run.</strong> In Terminal A, start the capture first:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 exec lab-router \
+  tcpdump -i any -nn icmp
+</code></pre>
+<p>Leave it running. In Terminal B, generate exactly one two-packet exchange:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 exec public-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p>When the replies are visible in Terminal A, press <code>Ctrl-C</code> there.</p>
+<p><strong>Observe.</strong> The exact interface names, packet IDs, and timestamps vary. Look
+for these address and type combinations:</p>
+<pre><code class="language-text">10.10.1.10 &gt; 10.10.12.10: ICMP echo request
+10.10.12.10 &gt; 10.10.1.10: ICMP echo reply
+</code></pre>
+<p>With <code>-i any</code>, the request is seen on the router's <code>public_a</code> side and on its
+<code>app_b</code> side. The reply is seen on the <code>app_b</code> side and then the <code>public_a</code>
+side. A capture may include more lines than this if other lab traffic is
+running.</p>
+<p><strong>Explain.</strong> Label the four observations as follows:</p>
+<pre><code class="language-text">request on public_a  = ingress to lab-router
+request on app_b     = egress from lab-router
+reply on app_b       = ingress to lab-router
+reply on public_a    = egress from lab-router
+</code></pre>
+<p>The source and destination IP addresses do not change in this chapter. The
+router forwards the packet; it does not perform NAT.</p>
+<h4 id="task-4-correlate-capture-evidence-with-the-route">Task 4: Correlate Capture Evidence With the Route</h4>
+<p><strong>Predict.</strong> The capture should agree with both route lookups: the source's
+next hop is <code>10.10.1.2</code>, and the router's connected route sends the packet out
+the interface carrying <code>10.10.12.2</code>.</p>
+<p><strong>Run.</strong> Inspect the router's addresses and route decision:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 exec lab-router ip addr
+bash scripts/compose-stage.sh 07 exec lab-router ip route get 10.10.12.10
+</code></pre>
+<p><strong>Observe.</strong> Find addresses for <code>10.10.1.2/24</code> and <code>10.10.12.2/24</code>. The route
+lookup should select the interface whose source address is <code>10.10.12.2</code>.</p>
+<p><strong>Explain.</strong> <code>ip route get</code> shows the kernel's decision; <code>tcpdump</code> shows the
+packets that followed that decision. The two tools answer different questions:</p>
+<pre><code class="language-text">ip route get = where Linux plans to send the packet
+tcpdump      = where the packet was actually observed
+</code></pre>
+<h4 id="task-5-inspect-a-single-router-interface">Task 5: Inspect a Single Router Interface</h4>
+<p><strong>Predict.</strong> A capture on only the <code>public_a</code> interface will show the request
+arriving and the reply leaving, but it will not show the router's <code>app_b</code> side.</p>
+<p><strong>Run.</strong> First find the interface carrying <code>10.10.1.2</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 exec lab-router ip -o -4 addr show
+</code></pre>
+<p>Note the interface name on the line containing <code>10.10.1.2/24</code>. In Terminal A,
+replace <code>INTERFACE_NAME</code> with that name:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 exec lab-router \
+  tcpdump -i INTERFACE_NAME -nn icmp
+</code></pre>
+<p>In Terminal B, run the ping again:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 exec public-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p>Stop the capture with <code>Ctrl-C</code>.</p>
+<p><strong>Observe.</strong> You should see packets involving <code>10.10.1.10</code> and
+<code>10.10.12.10</code> on the <code>public_a</code> side, but no capture lines from the <code>app_b</code>
+interface. If the interface is wrong, the capture may be empty.</p>
+<p><strong>Explain.</strong> Selecting one interface is an observation filter. It does not
+change routing or block packets. The packet can leave the router on another
+interface even though this capture cannot see that interface.</p>
+<h3 id="expected-observations">Expected Observations</h3>
+<p>At the end of the main experiment, you should have this evidence:</p>
+<pre><code class="language-text">source:      public-a-test 10.10.1.10
+destination: app-b-test    10.10.12.10
+request:     enters public_a, leaves app_b
+reply:       enters app_b, leaves public_a
+addresses:   unchanged; no NAT in Chapter 07
+</code></pre>
+<p>If the ping succeeds but the capture is empty, check that <code>tcpdump</code> is running
+inside <code>lab-router</code>, that it uses <code>-i any</code>, and that Terminal B generated the
+traffic after Terminal A started. If only the request appears, inspect the
+destination route and return route before assuming a firewall problem.</p>
+<h3 id="break-it-hide-half-the-path">Break It: Hide Half the Path</h3>
+<p>This is a controlled observation failure. It does not change a route or a
+container configuration.</p>
+<ol>
+<li>Capture on the <code>public_a</code> interface as in Task 5.</li>
+<li>Run the two-packet ping from <code>public-a-test</code>.</li>
+<li>Explain why the <code>app_b</code> ingress and egress events are absent.</li>
+</ol>
+<p><strong>Recovery.</strong> Stop the single-interface capture with <code>Ctrl-C</code>, restart the
+all-interface capture, and run the ping once more:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 exec lab-router \
+  tcpdump -i any -nn icmp
+
+# In another terminal:
+bash scripts/compose-stage.sh 07 exec public-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p>Stop <code>tcpdump</code> after the replies appear. No Compose repair is needed because
+the exercise changed only the observation point.</p>
+<h3 id="checkpoint-definition-of-done">Checkpoint: Definition of Done</h3>
+<p>You are ready for Chapter 08 when all of these are true:</p>
+<ul>
+<li><code>public-a-test</code> reaches <code>10.10.12.10</code> with <code>ping</code>;</li>
+<li><code>ip route get</code> shows <code>10.10.1.2</code> as the source-side next hop;</li>
+<li><code>tcpdump -i any -nn icmp</code> shows request and reply traffic on both router
+sides;</li>
+<li>you can name the ingress and egress side for both directions;</li>
+<li>you can explain why a one-interface capture is incomplete.</li>
+</ul>
+<p>When these conditions are true, mark the matching items in the progress
+checklist above.</p>
+<h3 id="clean-up">Clean Up</h3>
+<p>Stop any running capture with <code>Ctrl-C</code>, then remove the cumulative lab
+resources:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 07 down
+</code></pre>
+<h3 id="conclusion-next-chapter">Conclusion / Next Chapter</h3>
+<p>You used packet evidence to connect a route decision to actual ingress and
+egress events. A working path can now be inspected rather than inferred.</p>
+<p>Chapter 08 adds a stateful <code>iptables</code> firewall to <code>lab-router</code>. The packet path
+will remain, but a default <code>DROP</code> policy will require explicit allow rules for
+forwarded TCP traffic.</p>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>What four events should appear?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → lab-router</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 07 exec lab-router tcpdump -i any -nn icmp</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 07 exec lab-router tcpdump -i any -nn icmp">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>Ingress from public_a, forwarded egress to app_b, reply ingress from app_b, and reply egress to public_a.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="The packet already reached the router. The missing egress packet narrows the problem to the router’s Layer-3 forwarding decision or filtering before the destination service is relevant."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>tcpdump sees a packet enter the router but never sees it leave the expected egress interface. Where should you investigate first?</p><div class="prediction-options"><button type="button" data-question-choice="0">DNS</button><button type="button" data-question-choice="1">The router route/forwarding/firewall decision</button><button type="button" data-question-choice="2">The destination application password</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="07" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>A packet path is a sequence of observable interface events.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/static-routing/"><span>Chapter 06</span><strong>Static Routing</strong><p>Teach client containers which local router address to use when a destination lives on a remote subnet.</p></a><a href="/labs/docker-networking/iptables-firewall/"><span>Chapter 08</span><strong>Stateful Firewalling</strong><p>Replace unrestricted forwarding with a default-deny policy and allow only the ports the application design requires.</p></a><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/iptables-firewall/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

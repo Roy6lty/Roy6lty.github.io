@@ -1,39 +1,80 @@
 # Site Map
 
-The portfolio is a static GitHub Pages site. Page navigation is repeated in each HTML entry point, so update the header and footer consistently when adding a page.
+Canonical host: `https://ayo-olowoleru.xyz`
 
-## Public Pages
+The portfolio uses semantic directory routes. Legacy `.html` and `/network-series/` pages are compatibility redirect stubs only and should not be treated as canonical navigation destinations.
 
-| Page | URL | Purpose | Main content |
-| --- | --- | --- | --- |
-| Home | `/index.html` | First impression and overview | Identity, offer, product evidence, and current networking lab |
-| About | `/about.html` | Background and working approach | Who Ayo is, why DevOps, tools, principles, collaboration fit |
-| Projects | `/projects.html` | Detailed project evidence | Products, Series networking labs, load-testing platform, AWS target diagram, GitHub archive |
-| Series | `/series.html` | Infrastructure learning record | Series introduction, current Docker topology, and planned networking and operations entries |
-| Contact | `/contact.html` | Contact routes | Email, LinkedIn, GitHub |
+## Portfolio pages
 
-## Shared Assets
+| Page | Canonical URL | Purpose |
+| --- | --- | --- |
+| Home | `/` | Fast professional story and strongest evidence |
+| Work | `/work/` | Engineering case studies and professional impact |
+| Experience | `/experience/` | Career evidence, progression, responsibilities, measurable outcomes |
+| Labs | `/labs/` | Catalogue for active and upcoming engineering labs |
+| About | `/about/` | Engineering philosophy and working principles |
+| Contact | `/contact/` | Simple route to email, LinkedIn, GitHub, and résumé |
+| Résumé | `/assets/Ayo-Olowoleru-Resume.pdf` | Concise hiring document |
+| 404 | `/404.html` | Route recovery with guide-character illustration |
 
-- `styles.css` contains design tokens, layout, components, responsive rules, and animations.
-- `script.js` handles mobile navigation, reveal effects, scroll state, GitHub repository loading, and the two Three.js concept views.
-- `assets/examcompanion-home.png` is the ExamCompanion preview.
-- `assets/eventtally-preview.png` is the EventTally preview.
-- `assets/poplocal-preview.png` is the PopLocal preview.
+## Docker Networking lab
 
-## Content Relationships
+| Page | Canonical URL |
+| --- | --- |
+| Course landing | `/labs/docker-networking/` |
+| Containers Are Processes | `/labs/docker-networking/container-process/` |
+| CIDR & Docker Bridges | `/labs/docker-networking/cidr-bridges/` |
+| Network Namespaces | `/labs/docker-networking/network-namespaces/` |
+| Linux Capabilities | `/labs/docker-networking/capabilities/` |
+| Multi-homed Router | `/labs/docker-networking/router-container/` |
+| Routed Network Chain (05B) | `/labs/docker-networking/routed-network-chain/` |
+| Static Routing | `/labs/docker-networking/static-routing/` |
+| Packet Tracing | `/labs/docker-networking/packet-tracing/` |
+| iptables Firewall | `/labs/docker-networking/iptables-firewall/` |
+| Private Networks | `/labs/docker-networking/private-networks/` |
+| NAT Gateway | `/labs/docker-networking/nat-gateway/` |
+| Docker DNS | `/labs/docker-networking/docker-dns/` |
+| Nginx Public Access | `/labs/docker-networking/nginx-public-access/` |
+| PostgreSQL Primary | `/labs/docker-networking/postgres-primary/` |
+| PostgreSQL Process Model | `/labs/docker-networking/postgres-process-model/` |
+| Physical Replication | `/labs/docker-networking/physical-replication/` |
+| Runtime Persistence | `/labs/docker-networking/runtime-persistence/` |
+| Failure Testing | `/labs/docker-networking/failure-testing/` |
 
-- `index.html` gives each featured project a concise summary and product link.
-- `projects.html` is the source for detailed project claims and technical scope.
-- `about.html` provides shared background, toolkit, and working principles.
-- `README.md` documents the repository and featured work for maintainers.
-- `sitemap.xml` lists the canonical public URLs for search engines.
+The course landing supports **Grid** and **List** chapter views. Each lesson is pre-rendered static HTML with visible breadcrumbs, complete instructional content, related chapter links, and end-of-chapter review.
 
-## Future Page Convention
+## Planned Labs
 
-When adding a page:
+These currently appear as compact **Coming Soon** cards on `/labs/` and do not yet need separate indexable course trees:
 
-1. Copy the shared header and footer structure from the closest existing page.
-2. Add a unique `body` page class and canonical URL.
-3. Add the page to every primary navigation instance.
-4. Add the page to this document and `sitemap.xml`.
-5. Preserve the public-safe content rules in `STYLE_GUIDE.md`.
+- Docker Configuration Lab
+- DevOps Reliability Failure Lab
+- Distributed Systems Engineering Lab
+- Linux Internals Monitor Lab
+
+Create a dedicated semantic directory only when a lab has enough real material to be useful.
+
+## Shared assets
+
+- `styles.css` — portfolio design system and responsive layout.
+- `script.js` — navigation, reveal effects, scroll state, and progressive visuals.
+- `labs/docker-networking/course.css` — full-width technical course reader and Grid/List catalogue.
+- `labs/docker-networking/course.js` — progressive course interactions and browser-local preferences/progress.
+- `labs/docker-networking/diagrams/` — local course topology SVGs.
+- `assets/social-card.jpg` — portfolio Open Graph image.
+- `assets/docker-networking-social.jpg` — Docker Networking Open Graph image.
+- `assets/patch-thinking.webp` — guide-character crop used by the 404 page.
+- `assets/favicon.svg` — site icon.
+
+## Maintenance rules
+
+1. Keep navigation labels as `Home / Work / Experience / Labs / About / Resume / Let's talk`.
+2. Do not add skill ratings or proficiency scores.
+3. Keep GitHub repositories curated instead of dynamically sorted by recency.
+4. Preserve measurable claims only when they come from real project/professional evidence.
+5. Keep individual labs wider than normal portfolio pages on desktop.
+6. New labs belong under `/labs/`, not in the global navigation.
+7. Questions belong after practical chapter work.
+8. Every new canonical public page must be added to `sitemap.xml` and this file.
+9. Keep canonical URLs on `https://ayo-olowoleru.xyz`.
+10. Keep core lesson content in static HTML; JavaScript should enhance, not create, indexable content.

@@ -1,0 +1,269 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Initialize a standby with pg_basebackup and observe WAL streaming across the routed database subnets. Copy the primary cluster into a second database…"><meta name="theme-color" content="#101515"><title>PostgreSQL Physical Streaming Replication in Docker — Lab | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/physical-replication/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="PostgreSQL Physical Streaming Replication in Docker — Lab | Ayo Olowoleru"><meta property="og:description" content="Initialize a standby with pg_basebackup and observe WAL streaming across the routed database subnets. Copy the primary cluster into a second database…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/physical-replication/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"Physical Streaming Replication","item":"https://ayo-olowoleru.xyz/labs/docker-networking/physical-replication/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"PostgreSQL Physical Streaming Replication in Docker — Lab","description":"Initialize a standby with pg_basebackup and observe WAL streaming across the routed database subnets. Copy the primary cluster into a second database…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/physical-replication/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["pg_basebackup","WAL","standby.signal","primary_conninfo"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>RECOVERY</span><span>Chapter 15</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/15-physical-replication/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 15 / RECOVERY</span><h1>Physical Streaming Replication<br><em>Copy the primary cluster into a second database subnet, then observe WAL stream and replay on a read-only standby.</em></h1><p>Initialize a standby with pg_basebackup and observe WAL streaming across the routed database subnets.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>15<small>/ 17</small></strong><p>Base backup gives the starting state; WAL streaming gives the ongoing state.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>15 / 17</span></div><div class="chapter-rail-progress"><span style="width:88.2%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link is-current" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/15-physical-replication/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 15 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Adds postgres-replica at 10.10.22.20 and intentionally starts it as sleep infinity so it cannot initialize a conflicting cluster first.</p></div><div><span>Lab state</span><p>Primary on db_a / manual standby bootstrap on db_b / WAL streaming</p><div class="chapter-tags"><span>pg_basebackup</span><span>WAL</span><span>standby.signal</span><span>primary_conninfo</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>Base backup gives the starting state; WAL streaming gives the ongoing state.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/15-physical-replication/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-15.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-15.svg" alt="Physical Streaming Replication topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Prepare the standby directory</h3><p>Enter the replica, clear the target directory, and restore PostgreSQL ownership and permissions.</p><div class="series-command"><div class="series-command-meta"><span>HOST → opens shell in postgres-replica</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 15 exec postgres-replica sh</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 15 exec postgres-replica sh">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>POSTGRES-REPLICA SHELL</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>rm -rf /var/lib/postgresql/data/*</code></pre><button type="button" data-copy-command="rm -rf /var/lib/postgresql/data/*">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>POSTGRES-REPLICA SHELL</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>install -d -o postgres -g postgres -m 700 /var/lib/postgresql/data</code></pre><button type="button" data-copy-command="install -d -o postgres -g postgres -m 700 /var/lib/postgresql/data">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Copy the physical cluster</h3><p>Run pg_basebackup with streaming WAL and generated standby configuration.</p><div class="series-command"><div class="series-command-meta"><span>POSTGRES-REPLICA SHELL</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>su postgres -c &#x27;PGPASSWORD=replica_password pg_basebackup -h 10.10.21.20 -U replicator -D /var/lib/postgresql/data -Fp -Xs -P -R&#x27;</code></pre><button type="button" data-copy-command="su postgres -c &#x27;PGPASSWORD=replica_password pg_basebackup -h 10.10.21.20 -U replicator -D /var/lib/postgresql/data -Fp -Xs -P -R&#x27;">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Start and verify recovery</h3><p>Start PostgreSQL on the replica and compare recovery and replication state.</p><div class="series-command"><div class="series-command-meta"><span>POSTGRES-REPLICA SHELL</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>su postgres -c &#x27;postgres -D /var/lib/postgresql/data&#x27;</code></pre><button type="button" data-copy-command="su postgres -c &#x27;postgres -D /var/lib/postgresql/data&#x27;">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>PSQL SESSION</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>SELECT pg_is_in_recovery();</code></pre><button type="button" data-copy-command="SELECT pg_is_in_recovery();">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>PSQL SESSION</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>SELECT client_addr, state FROM pg_stat_replication;</code></pre><button type="button" data-copy-command="SELECT client_addr, state FROM pg_stat_replication;">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Run pg_basebackup against a non-empty data directory and explain why the replica must not initialize its own unrelated cluster first.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-replica</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 15 exec postgres-replica ls -la /var/lib/postgresql/data</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 15 exec postgres-replica ls -la /var/lib/postgresql/data">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 15 down -v</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#concepts">Concepts</a><a href="#goal">Goal</a><a href="#progression-from-chapter-14">Progression From Chapter 14</a><a href="#what-this-stage-adds">What This Stage Adds</a><a href="#progress-checklist">Progress Checklist</a><a href="#before-you-start">Before You Start</a><a href="#tasks">Tasks</a></nav><div class="lesson-notes" data-static-notes><h3 id="concepts">Concepts</h3>
+<ul>
+<li><strong>Physical replication</strong> copies a complete PostgreSQL cluster and replays its
+WAL. It is different from logical replication, which publishes selected row
+changes.</li>
+<li><strong><code>pg_basebackup</code></strong> creates the initial physical copy. It must copy the
+primary into an empty data directory.</li>
+<li><strong>WAL</strong> is the write-ahead log generated by the primary. The standby streams
+and replays WAL after the base backup is complete.</li>
+<li><strong><code>standby.signal</code></strong> makes PostgreSQL start in recovery mode. The <code>-R</code> option
+to <code>pg_basebackup</code> creates it and writes <code>primary_conninfo</code>.</li>
+<li>The primary is writable. The standby is in recovery and is read-only for
+this lab.</li>
+</ul>
+<h3 id="goal">Goal</h3>
+<p>Manually initialize <code>postgres-replica</code> from <code>postgres-primary</code> with
+<code>pg_basebackup</code>, start the copied cluster, and prove that WAL changes travel
+from <code>db_a</code> to <code>db_b</code> across the lab router.</p>
+<h3 id="progression-from-chapter-14">Progression From Chapter 14</h3>
+<p>Chapter 14 finished the PostgreSQL process-model lessons. Chapter 13 already
+created a writable primary at <code>10.10.21.20</code>, configured <code>wal_level=replica</code>,
+created the <code>replicator</code> role, and routed database traffic through
+<code>lab-router</code>.</p>
+<p>The new question is not whether PostgreSQL can start. It is:</p>
+<pre><code class="language-text">How can a second PostgreSQL cluster get the primary's physical state
+and continue receiving changes?
+</code></pre>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>The cumulative Compose stack adds <code>postgres-replica</code>:</p>
+<pre><code class="language-text">postgres-primary                 postgres-replica
+db_a                             db_b
+10.10.21.20:5432                 10.10.22.20:5432
+writable                         starts as sleep infinity
+      |                                  |
+      +---------- lab-router ------------+
+                 TCP 5432
+</code></pre>
+<p>The replica has the named volume <code>postgres_replica_data</code>, but chapter 15 does
+not bootstrap it automatically. Its entrypoint applies these routes and then
+delegates to the official image entrypoint:</p>
+<pre><code class="language-text">10.10.21.0/24 via 10.10.22.2
+10.10.11.0/24 via 10.10.22.2
+10.10.12.0/24 via 10.10.22.2
+</code></pre>
+<p>The sleeping command is deliberate. It gives us a safe shell in which to
+prepare the replica volume before PostgreSQL starts.</p>
+<h3 id="progress-checklist">Progress Checklist</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Start the cumulative chapter 15 stack and confirm the primary is healthy.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Inspect the replica route and confirm its data directory is the replica
+volume.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Copy the primary cluster with <code>pg_basebackup -R</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Configure the replica password file for future WAL connections.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Start PostgreSQL manually and verify recovery plus streaming state.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Insert on the primary and observe the row on the replica.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Complete the safe non-empty-directory break exercise and recover.</li>
+</ul>
+<h3 id="before-you-start">Before You Start</h3>
+<p>Run commands from the repository root. This is a disposable Docker lab. The
+following command starts only the services needed by the cumulative chapter 15
+configuration, including the primary and the sleeping replica:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 15 up -d --build
+bash scripts/compose-stage.sh 15 ps
+</code></pre>
+<p>Do not use <code>down -v</code> during the manual exercise. It removes both the primary
+and replica named volumes. The data-directory reset below is intentionally
+limited to the replica container.</p>
+<h3 id="tasks">Tasks</h3>
+<h4 id="1-confirm-the-starting-state">1. Confirm the Starting State</h4>
+<p><strong>Predict:</strong> What should be running in <code>postgres-replica</code> before a base backup?
+Should PostgreSQL already have a cluster to serve?</p>
+<p><strong>Run:</strong></p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 15 exec postgres-replica sh -c \
+  'ip route; printf "\nReplica data directory:\n"; ls -la /var/lib/postgresql/data'
+</code></pre>
+<p><strong>Observe:</strong> The route table includes the <code>db_a</code> route through <code>10.10.22.2</code>.
+The data directory is empty on a fresh replica volume, and the container's
+main command is still <code>sleep infinity</code>.</p>
+<p><strong>Explain:</strong> The replica needs a route to <code>10.10.21.20</code>, but it must not let the
+normal PostgreSQL image initialization create an unrelated cluster first. A
+physical standby starts from the primary's cluster, not from a new local
+bootstrap.</p>
+<h4 id="2-prepare-an-empty-replica-directory">2. Prepare an Empty Replica Directory</h4>
+<p><strong>Predict:</strong> What will happen if <code>pg_basebackup</code> is pointed at a non-empty
+directory? Why is clearing the directory dangerous if the command runs in the
+wrong container?</p>
+<p><strong>Run:</strong> Enter the replica shell, then inspect the path before clearing it:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 15 exec postgres-replica sh
+</code></pre>
+<p>Inside that shell, run:</p>
+<pre><code class="language-bash">ls -la /var/lib/postgresql/data
+rm -rf /var/lib/postgresql/data/*
+install -d -o postgres -g postgres -m 700 /var/lib/postgresql/data
+</code></pre>
+<p><strong>Observe:</strong> The directory is ready for PostgreSQL files and is owned by the
+<code>postgres</code> user.</p>
+<p><strong>Explain:</strong> These commands operate on the mounted <code>postgres_replica_data</code>
+volume because they are being run inside <code>postgres-replica</code>. Never run this
+reset in <code>postgres-primary</code>; it would destroy the writable source cluster.
+The reset is appropriate when intentionally repeating this manual chapter on
+the disposable replica volume.</p>
+<h4 id="3-take-the-physical-base-backup">3. Take the Physical Base Backup</h4>
+<p><strong>Predict:</strong> Which network address should receive the backup connection? Which
+router interface is the next hop from the replica?</p>
+<p><strong>Run:</strong> Still inside the <code>postgres-replica</code> shell, run the original physical
+copy command:</p>
+<pre><code class="language-bash">su postgres -c 'PGPASSWORD=replica_password pg_basebackup -h 10.10.21.20 -U replicator -D /var/lib/postgresql/data -Fp -Xs -P -R'
+</code></pre>
+<p>The important options are:</p>
+<pre><code class="language-text">-h 10.10.21.20  connect to the primary
+-U replicator    use the replication role
+-D ...           write into the empty replica data directory
+-Fp              plain file layout
+-Xs              stream WAL during the backup
+-P               show progress
+-R               create standby.signal and primary_conninfo
+</code></pre>
+<p>After it completes, inspect the two standby markers:</p>
+<pre><code class="language-bash">ls -l /var/lib/postgresql/data/PG_VERSION \
+  /var/lib/postgresql/data/standby.signal
+</code></pre>
+<p><strong>Observe:</strong> <code>pg_basebackup</code> reports progress and exits successfully. The
+directory contains <code>PG_VERSION</code> and <code>standby.signal</code>.</p>
+<p><strong>Explain:</strong> The copied files are a physical cluster, not an SQL dump. The
+<code>-R</code> option records enough connection information for PostgreSQL to reconnect
+to the primary and enter recovery mode.</p>
+<h4 id="4-provide-credentials-for-wal-streaming-and-start-postgresql">4. Provide Credentials for WAL Streaming and Start PostgreSQL</h4>
+<p><strong>Predict:</strong> Is the <code>PGPASSWORD</code> used for <code>pg_basebackup</code> automatically saved
+for later WAL connections? What happens if the standby has no password file?</p>
+<p><strong>Run:</strong> Still inside the replica shell, create the password file used by the
+<code>postgres</code> user for subsequent replication connections:</p>
+<pre><code class="language-bash">printf '*:*:*:replicator:replica_password\n' &gt; /var/lib/postgresql/.pgpass
+chown postgres:postgres /var/lib/postgresql/.pgpass
+chmod 600 /var/lib/postgresql/.pgpass
+</code></pre>
+<p>Now start the copied server in the foreground:</p>
+<pre><code class="language-bash">su postgres -c 'postgres -D /var/lib/postgresql/data'
+</code></pre>
+<p>Leave this command running. Open a second terminal for the remaining checks.</p>
+<p><strong>Observe:</strong> The first terminal shows PostgreSQL starting from the copied
+data directory. It remains attached to the terminal because this is the
+manual process model lesson.</p>
+<p><strong>Explain:</strong> <code>PGPASSWORD</code> is an environment variable for the one
+<code>pg_basebackup</code> command. The <code>.pgpass</code> file is needed when the standby later
+opens its own WAL connection. The password file is deliberately restricted to
+mode <code>600</code>.</p>
+<h4 id="5-verify-recovery-and-streaming">5. Verify Recovery and Streaming</h4>
+<p><strong>Predict:</strong> What should <code>pg_is_in_recovery()</code> return on the primary and on
+the replica? What state should the primary report for the replica client?</p>
+<p><strong>Run:</strong> In the second terminal:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 15 exec -T postgres-replica \
+  psql -U labadmin -d labdb -c 'SELECT pg_is_in_recovery();'
+
+bash scripts/compose-stage.sh 15 exec -T postgres-primary \
+  psql -U labadmin -d labdb -c \
+  'SELECT client_addr, state FROM pg_stat_replication;'
+
+bash scripts/compose-stage.sh 15 exec -T postgres-primary \
+  psql -U labadmin -d labdb -c 'SELECT pg_is_in_recovery();'
+</code></pre>
+<p><strong>Observe:</strong> The replica returns <code>t</code>, the primary returns <code>f</code>, and the primary
+reports a row similar to:</p>
+<pre><code class="language-text"> client_addr  |   state
+--------------+-----------
+ 10.10.22.20  | streaming
+</code></pre>
+<p>The exact table formatting may vary.</p>
+<p><strong>Explain:</strong> <code>t</code> means the replica is in recovery and replaying the primary's
+WAL. <code>streaming</code> means the primary has an active WAL sender connection to the
+replica. The network path and PostgreSQL <code>pg_hba.conf</code> policy both had to work.</p>
+<h4 id="6-prove-wal-replay-and-read-only-behavior">6. Prove WAL Replay and Read-Only Behavior</h4>
+<p><strong>Predict:</strong> If the primary receives a new row, how will the replica get it?
+Should an <code>INSERT</code> on the replica succeed?</p>
+<p><strong>Run:</strong> Insert on the primary, then read from the replica:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 15 exec -T postgres-primary \
+  psql -U labadmin -d labdb -c \
+  "INSERT INTO users (name) VALUES ('physical-replication-test');"
+
+sleep 2
+
+bash scripts/compose-stage.sh 15 exec -T postgres-replica \
+  psql -U labadmin -d labdb -c \
+  "SELECT name FROM users WHERE name = 'physical-replication-test';"
+</code></pre>
+<p>Now deliberately try a write on the standby:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 15 exec -T postgres-replica \
+  psql -U labadmin -d labdb -c \
+  "INSERT INTO users (name) VALUES ('should-fail-on-standby');"
+</code></pre>
+<p><strong>Observe:</strong> The first query succeeds, the row appears on the replica after
+WAL replay, and the last command fails with an error such as:</p>
+<pre><code class="language-text">ERROR:  cannot execute INSERT in a read-only transaction
+</code></pre>
+<p><strong>Explain:</strong> The primary generates WAL for the insert. The standby receives
+and replays that WAL, so the row becomes visible without a second application
+write. Physical standby recovery prevents writes that would diverge the copied
+cluster.</p>
+<h3 id="expected-observations">Expected Observations</h3>
+<p>The complete manual flow is:</p>
+<pre><code class="language-text">postgres-primary 10.10.21.20
+        |
+        | TCP 5432, WAL stream
+        v
+lab-router 10.10.21.2 &lt;-&gt; 10.10.22.2
+        |
+        v
+postgres-replica 10.10.22.20
+        |
+        +-- pg_is_in_recovery() = t
+        +-- standby.signal exists
+        +-- primary rows are replayed
+        +-- local writes are rejected
+</code></pre>
+<p>The primary's <code>pg_stat_replication</code> row is stronger evidence than a successful
+one-time TCP connection: it shows PostgreSQL is actively sending WAL.</p>
+<h3 id="checkpoint-definition-of-done">Checkpoint: Definition of Done</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/><code>postgres-replica</code> has a physical copy containing <code>PG_VERSION</code> and
+<code>standby.signal</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>The replica returns <code>pg_is_in_recovery() = t</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>The primary returns <code>pg_is_in_recovery() = f</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/><code>pg_stat_replication.state</code> is <code>streaming</code> for <code>10.10.22.20</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>A row inserted on the primary is readable on the replica.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>A write attempted on the replica is rejected.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>You can explain the route, firewall, authentication, and WAL steps in
+that order.</li>
+</ul>
+<h3 id="break-it-use-a-non-empty-scratch-directory">Break It: Use a Non-Empty Scratch Directory</h3>
+<p>This is one controlled failure. It deliberately targets <code>/tmp</code>, not the live
+replica data directory, so it cannot damage the working standby.</p>
+<p><strong>Predict:</strong> What should <code>pg_basebackup</code> do when its destination already has a
+file? Which layer reports the failure?</p>
+<p><strong>Run:</strong> In a new terminal, run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 15 exec postgres-replica sh
+</code></pre>
+<p>Inside that shell, run:</p>
+<pre><code class="language-bash">rm -rf /tmp/replication-break
+install -d -o postgres -g postgres -m 700 /tmp/replication-break
+touch /tmp/replication-break/already-here
+su postgres -c 'PGPASSWORD=replica_password pg_basebackup -h 10.10.21.20 -U replicator -D /tmp/replication-break -Fp -Xs -P -R'
+</code></pre>
+<p><strong>Observe:</strong> <code>pg_basebackup</code> fails because the destination is not empty. This
+is a client-side data-directory precondition, not a routing failure.</p>
+<p><strong>Explain:</strong> A physical base backup must not be merged into an unrelated
+cluster. The safe recovery is to remove only the scratch directory, not the
+real <code>PGDATA</code>:</p>
+<pre><code class="language-bash">rm -rf /tmp/replication-break
+exit
+bash scripts/compose-stage.sh 15 exec -T postgres-primary \
+  psql -U labadmin -d labdb -c \
+  'SELECT client_addr, state FROM pg_stat_replication;'
+</code></pre>
+<p>The existing standby should still report <code>streaming</code>.</p>
+<h3 id="clean-up">Clean Up</h3>
+<p>Stop the foreground PostgreSQL process with <code>Ctrl-C</code> in the first terminal,
+then remove the chapter containers and networks:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 15 down
+</code></pre>
+<p>This preserves the named volumes by default. Use <code>down -v</code> only when you
+intentionally want to erase both the primary and replica clusters and start
+the database lessons from empty volumes.</p>
+<h3 id="conclusion-and-next-chapter">Conclusion and Next Chapter</h3>
+<p>You initialized a standby from a physical copy, supplied credentials for its
+WAL connection, observed recovery and streaming, and proved the standby is
+read-only. The setup is still manual: a recreated container does not run the
+base backup or start PostgreSQL for you.</p>
+<p>Chapter 16 moves these steps into an idempotent entrypoint and uses the named
+volume plus <code>PG_VERSION</code> to bootstrap only when the replica is empty.</p>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>What proves this is streaming replication?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-replica</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 15 exec postgres-replica psql -U labadmin -d labdb -c &#x27;SELECT pg_is_in_recovery();&#x27;</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 15 exec postgres-replica psql -U labadmin -d labdb -c &#x27;SELECT pg_is_in_recovery();&#x27;">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>The replica returns t, the primary returns f, and the primary reports the replica as streaming. Inserts on the primary appear on the read-only replica.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="Physical replication needs the same underlying cluster state. pg_basebackup creates that starting point; WAL streaming advances it afterward."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>Can a replica begin from an unrelated PostgreSQL data directory and become a physical standby by receiving only new WAL records?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes</button><button type="button" data-question-choice="1">No, it needs a compatible base state first</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="15" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>Base backup gives the starting state; WAL streaming gives the ongoing state.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/postgres-process-model/"><span>Chapter 14</span><strong>PostgreSQL Processes and Job Control</strong><p>Connect the container PID 1 model to PostgreSQL main, background, and client backend processes.</p></a><a href="/labs/docker-networking/runtime-persistence/"><span>Chapter 16</span><strong>Runtime Configuration Persistence</strong><p>Move manual routes and replica bootstrap into idempotent entrypoints so recreation converges on the same runtime state.</p></a><a href="/labs/docker-networking/postgres-primary/"><span>Chapter 13</span><strong>PostgreSQL Primary</strong><p>Add a writable database to the database tier and validate the path at TCP, SQL, process, and authentication layers.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/runtime-persistence/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

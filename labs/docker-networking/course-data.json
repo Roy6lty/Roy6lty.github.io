@@ -1,0 +1,1278 @@
+{
+  "chapters": [
+    {
+      "id": "01",
+      "slug": "container-process",
+      "title": "Container Process Model",
+      "phase": "FOUNDATION",
+      "summary": "Start with the smallest useful building block: a container whose lifetime is controlled by one process.",
+      "goal": "See that a container lives while its PID 1 process lives. Compare a long-lived sleep infinity process with a command override.",
+      "adds": "Creates public-a-test without a network. This is the seed service later chapters place into the lab.",
+      "concepts": [
+        "PID 1",
+        "command override",
+        "exec",
+        "process boundary"
+      ],
+      "steps": [
+        {
+          "title": "Start the seed service",
+          "copy": "Bring up the first stage without building a network yet.",
+          "commands": [
+            "bash scripts/compose-stage.sh 01 up -d"
+          ]
+        },
+        {
+          "title": "Inspect the process table",
+          "copy": "Confirm that Docker is keeping the service alive with sleep infinity.",
+          "commands": [
+            "bash scripts/compose-stage.sh 01 ps",
+            "bash scripts/compose-stage.sh 01 exec public-a-test ps"
+          ]
+        },
+        {
+          "title": "Read PID 1 directly",
+          "copy": "Look at the command line of the first process in the container namespace.",
+          "commands": [
+            "bash scripts/compose-stage.sh 01 exec public-a-test sh -c 'tr \"\\0\" \" \" </proc/1/cmdline; printf \"\\n\"'"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What should `/proc/1/cmdline` contain?",
+        "commands": [
+          "bash scripts/compose-stage.sh 01 exec public-a-test ps"
+        ],
+        "expected": "PID 1 is sleep infinity. A command that exits normally gives Docker an exit status and the service stops."
+      },
+      "breakIt": {
+        "copy": "Run a one-shot container with true and compare it with the long-running service.",
+        "commands": [
+          "bash scripts/compose-stage.sh 01 run --rm public-a-test true"
+        ],
+        "reset": "bash scripts/compose-stage.sh 01 down"
+      },
+      "takeaway": "A container is a process boundary, not a virtual machine.",
+      "repoPath": "chapters/01-container-process"
+    },
+    {
+      "id": "02",
+      "slug": "cidr-bridges",
+      "title": "CIDR and Bridge Networks",
+      "phase": "FOUNDATION",
+      "summary": "Give the lab real boundaries with six user-defined Docker bridge networks and explicit /24 address ranges.",
+      "goal": "Create six user-defined bridge networks with explicit /24 CIDRs and fixed container addresses.",
+      "adds": "Attaches public-a-test to public_a and creates five more diagnostic containers plus five more bridge networks. No router exists yet.",
+      "concepts": [
+        "Layer-2 bridge",
+        "CIDR /24",
+        "Docker IPAM",
+        "bridge gateway"
+      ],
+      "steps": [
+        {
+          "title": "Start all six boundaries",
+          "copy": "Create the cumulative stage and confirm the six diagnostic services are running.",
+          "commands": [
+            "bash scripts/compose-stage.sh 02 up -d",
+            "bash scripts/compose-stage.sh 02 ps"
+          ]
+        },
+        {
+          "title": "Inventory Docker networks",
+          "copy": "Check that public, app, and database bridges exist as separate local networks.",
+          "commands": [
+            "docker network ls"
+          ]
+        },
+        {
+          "title": "Inspect one interface and route",
+          "copy": "Read the address and directly connected route inside the app tier.",
+          "commands": [
+            "bash scripts/compose-stage.sh 02 exec public-a-test ip addr",
+            "bash scripts/compose-stage.sh 02 exec app-a-test ip route"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "Why can containers on different bridges not communicate directly?",
+        "commands": [
+          "bash scripts/compose-stage.sh 02 exec app-a-test ip route"
+        ],
+        "expected": "Each container has only its local connected network. There is no router connecting app_a to app_b or any other bridge yet."
+      },
+      "breakIt": {
+        "copy": "Try a cross-network request before a router exists. Record the failure without adding a route.",
+        "commands": [
+          "bash scripts/compose-stage.sh 02 exec app-a-test ping -c 2 10.10.12.10"
+        ],
+        "reset": "bash scripts/compose-stage.sh 02 down"
+      },
+      "takeaway": "A bridge is a boundary until a device deliberately connects it.",
+      "repoPath": "chapters/02-cidr-bridges"
+    },
+    {
+      "id": "03",
+      "slug": "network-namespaces",
+      "title": "Network Namespaces and Interfaces",
+      "phase": "FOUNDATION",
+      "summary": "Look inside the Linux networking view Docker created for one container before introducing routing.",
+      "goal": "Identify the loopback, container interface, IP address, connected route, neighbor table, and how neighbors change after traffic.",
+      "adds": "Adds no topology. This chapter inspects the six isolated bridges created in chapter 02.",
+      "concepts": [
+        "network namespace",
+        "veth pair",
+        "loopback",
+        "neighbor table"
+      ],
+      "steps": [
+        {
+          "title": "Start the inspection stage",
+          "copy": "Bring up the previous topology and list its services.",
+          "commands": [
+            "bash scripts/compose-stage.sh 03 up -d",
+            "bash scripts/compose-stage.sh 03 ps"
+          ]
+        },
+        {
+          "title": "Inspect the namespace",
+          "copy": "Read the interfaces and route table inside app-a-test.",
+          "commands": [
+            "bash scripts/compose-stage.sh 03 exec app-a-test ip addr",
+            "bash scripts/compose-stage.sh 03 exec app-a-test ip route"
+          ]
+        },
+        {
+          "title": "Generate a neighbor entry",
+          "copy": "Inspect the neighbor table, ping the local Docker gateway, then inspect it again.",
+          "commands": [
+            "bash scripts/compose-stage.sh 03 exec app-a-test ip neigh",
+            "bash scripts/compose-stage.sh 03 exec app-a-test ping -c 2 10.10.11.1",
+            "bash scripts/compose-stage.sh 03 exec app-a-test ip neigh"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What changed after pinging 10.10.11.1?",
+        "commands": [
+          "bash scripts/compose-stage.sh 03 exec app-a-test ip neigh"
+        ],
+        "expected": "Traffic can populate the neighbor cache. It is evidence of learned next-hop information, not a complete inventory of every device."
+      },
+      "breakIt": {
+        "copy": "Ask Linux how it would route toward another subnet before a router exists.",
+        "commands": [
+          "bash scripts/compose-stage.sh 03 exec app-a-test ip route get 10.10.12.10"
+        ],
+        "reset": "bash scripts/compose-stage.sh 03 down"
+      },
+      "takeaway": "Every container starts with its own local networking environment.",
+      "repoPath": "chapters/03-network-namespaces"
+    },
+    {
+      "id": "04",
+      "slug": "capabilities",
+      "title": "Linux Capabilities",
+      "phase": "FOUNDATION",
+      "summary": "Permission is part of the network. Root inside a container still needs the specific capability to change routes.",
+      "goal": "Understand why root is restricted, what capabilities are, why route changes require CAP_NET_ADMIN, and why permission does not make a route valid.",
+      "adds": "Builds the reusable lab-tools image with iproute2, iptables, tcpdump, curl, netcat, python3, and bind-tools.",
+      "concepts": [
+        "root identity",
+        "CAP_NET_ADMIN",
+        "CAP_NET_RAW",
+        "cap_add"
+      ],
+      "steps": [
+        {
+          "title": "Build the diagnostic image",
+          "copy": "Create the reusable Alpine-based image used by later routing experiments.",
+          "commands": [
+            "docker build -t docker-networking-vpc-lab/lab-tools:latest -f chapters/04-capabilities/tools/Dockerfile chapters/04-capabilities/tools"
+          ]
+        },
+        {
+          "title": "Predict the permission boundary",
+          "copy": "Start without NET_ADMIN, enter as root, and compare identity with privileged operations.",
+          "commands": [
+            "docker run -d --name lab-tools docker-networking-vpc-lab/lab-tools:latest",
+            "docker exec -it lab-tools id"
+          ]
+        },
+        {
+          "title": "Add the network capability",
+          "copy": "Repeat the route operation with the capability granted by Compose.",
+          "commands": [
+            "bash scripts/compose-stage.sh 04 up -d --build",
+            "bash scripts/compose-stage.sh 04 exec app-a-test ip route"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What did NET_ADMIN change?",
+        "commands": [
+          "bash scripts/compose-stage.sh 04 exec app-a-test ip route"
+        ],
+        "expected": "It grants permission to perform network administration. It does not create interfaces, routes, next hops, forwarding, firewall permission, or a listener by itself."
+      },
+      "breakIt": {
+        "copy": "Remove the capability in a disposable container and repeat the route command. Compare the permission error with a later connectivity failure.",
+        "commands": [
+          "docker rm -f lab-tools"
+        ],
+        "reset": "bash scripts/compose-stage.sh 04 down"
+      },
+      "takeaway": "Permission to configure a route is not the same as a valid routed network path.",
+      "repoPath": "chapters/04-capabilities"
+    },
+    {
+      "id": "05",
+      "slug": "router-container",
+      "title": "Multi-Homed Router Container",
+      "phase": "ROUTING FABRIC",
+      "summary": "Introduce a Layer-3 device attached to all six bridges, then observe the connected routes Linux creates for it.",
+      "goal": "Build a router container with one IP on each subnet, connected routes for every subnet, and IPv4 forwarding enabled.",
+      "adds": "Adds lab-router with .2 on public_a, public_b, app_a, app_b, db_a, and db_b.",
+      "concepts": [
+        "multi-homed",
+        "connected route",
+        "ip_forward",
+        "Layer 3"
+      ],
+      "steps": [
+        {
+          "title": "Start the router stage",
+          "copy": "Bring up the six diagnostic containers plus lab-router.",
+          "commands": [
+            "bash scripts/compose-stage.sh 05 up -d",
+            "bash scripts/compose-stage.sh 05 ps"
+          ]
+        },
+        {
+          "title": "Inspect every interface",
+          "copy": "Enter the router and find one address in each lab subnet.",
+          "commands": [
+            "bash scripts/compose-stage.sh 05 exec lab-router sh",
+            "ip addr"
+          ]
+        },
+        {
+          "title": "Read connected routes",
+          "copy": "The kernel learns routes automatically because each network is directly attached.",
+          "commands": [
+            "bash scripts/compose-stage.sh 05 exec lab-router ip route",
+            "bash scripts/compose-stage.sh 05 exec lab-router sysctl net.ipv4.ip_forward"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What does the router know automatically?",
+        "commands": [
+          "bash scripts/compose-stage.sh 05 exec lab-router ip route"
+        ],
+        "expected": "It knows all six directly connected /24 subnets. Forwarding must still be enabled before it can pass packets between interfaces."
+      },
+      "breakIt": {
+        "copy": "Inspect the router before forwarding is enabled and compare endpoint traffic with traffic that must cross interfaces.",
+        "commands": [
+          "bash scripts/compose-stage.sh 05 exec lab-router ip addr"
+        ],
+        "reset": "bash scripts/compose-stage.sh 05 down"
+      },
+      "takeaway": "A router is an endpoint on every subnet and a forwarder between them.",
+      "repoPath": "chapters/05-router-container"
+    },
+    {
+      "id": "06",
+      "slug": "static-routing",
+      "title": "Static Routing",
+      "phase": "ROUTING FABRIC",
+      "summary": "Teach client containers which local router address to use when a destination lives on a remote subnet.",
+      "goal": "Identify missing remote routes, choose a valid local next hop, inspect route selection, and distinguish forward from return paths.",
+      "adds": "Adds runtime routes to the six diagnostic containers through lab-router. The optional 05B chain remains a separate lab.",
+      "concepts": [
+        "static route",
+        "next hop",
+        "forward path",
+        "return path"
+      ],
+      "steps": [
+        {
+          "title": "Observe the chapter 05 baseline",
+          "copy": "Start the router topology and inspect app-a-test before adding remote routes.",
+          "commands": [
+            "bash scripts/compose-stage.sh 05 up -d --build",
+            "bash scripts/compose-stage.sh 05 exec app-a-test ip route",
+            "bash scripts/compose-stage.sh 05 exec app-a-test ip route get 10.10.12.10"
+          ]
+        },
+        {
+          "title": "Test the missing path",
+          "copy": "A lab-router exists, but app-a-test still uses Docker default routing. Confirm the expected failure.",
+          "commands": [
+            "bash scripts/compose-stage.sh 05 exec app-a-test ping -c 2 10.10.12.10"
+          ]
+        },
+        {
+          "title": "Apply and inspect the overlay",
+          "copy": "Start chapter 06 and verify the route uses the router address on app_a.",
+          "commands": [
+            "bash scripts/compose-stage.sh 06 up -d --build",
+            "bash scripts/compose-stage.sh 06 exec app-a-test ip route get 10.10.12.10"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "Why is 10.10.11.2 a valid next hop from app-a-test?",
+        "commands": [
+          "bash scripts/compose-stage.sh 06 exec app-a-test ip route"
+        ],
+        "expected": "The next hop must be reachable on the sender local network. app-a-test can reach lab-router at .2 on app_a, not the router address on a different subnet."
+      },
+      "breakIt": {
+        "copy": "Delete a destination return route and observe a connection that reaches the router but cannot complete.",
+        "commands": [
+          "bash scripts/compose-stage.sh 06 exec app-b-test ip route"
+        ],
+        "reset": "bash scripts/compose-stage.sh 06 down"
+      },
+      "takeaway": "Routing is a two-way contract: the request path and the return path must both exist.",
+      "repoPath": "chapters/06-static-routing"
+    },
+    {
+      "id": "07",
+      "slug": "packet-tracing",
+      "title": "Packet Tracing",
+      "phase": "ROUTING FABRIC",
+      "summary": "Turn a route-table prediction into evidence by watching ingress, forwarded egress, and the reply on the router.",
+      "goal": "Use tcpdump to prove where a packet enters and leaves the router.",
+      "adds": "Adds no service. It adds an observation workflow using the lab-tools image from chapter 04.",
+      "concepts": [
+        "ingress",
+        "egress",
+        "tcpdump",
+        "packet evidence"
+      ],
+      "steps": [
+        {
+          "title": "Start the routed topology",
+          "copy": "Use the accumulated stage through chapter 07.",
+          "commands": [
+            "bash scripts/compose-stage.sh 07 up -d"
+          ]
+        },
+        {
+          "title": "Capture on every interface",
+          "copy": "Run the capture in one terminal so the router can show both sides of the flow.",
+          "commands": [
+            "bash scripts/compose-stage.sh 07 exec lab-router tcpdump -i any -nn icmp"
+          ]
+        },
+        {
+          "title": "Generate the packet",
+          "copy": "From another terminal, ping app-b from public-a and match each capture line to the route.",
+          "commands": [
+            "bash scripts/compose-stage.sh 07 exec public-a-test ping -c 2 10.10.12.10"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What four events should appear?",
+        "commands": [
+          "bash scripts/compose-stage.sh 07 exec lab-router tcpdump -i any -nn icmp"
+        ],
+        "expected": "Ingress from public_a, forwarded egress to app_b, reply ingress from app_b, and reply egress to public_a."
+      },
+      "breakIt": {
+        "copy": "Capture only one router interface and explain why half of the conversation disappears.",
+        "commands": [
+          "bash scripts/compose-stage.sh 07 exec lab-router tcpdump -i eth0 -nn icmp"
+        ],
+        "reset": "bash scripts/compose-stage.sh 07 down"
+      },
+      "takeaway": "A packet path is a sequence of observable interface events.",
+      "repoPath": "chapters/07-packet-tracing"
+    },
+    {
+      "id": "08",
+      "slug": "iptables-firewall",
+      "title": "Stateful Firewalling",
+      "phase": "ROUTING FABRIC",
+      "summary": "Replace unrestricted forwarding with a default-deny policy and allow only the ports the application design requires.",
+      "goal": "Allow required application flows while explaining FORWARD, conntrack, rule order, and the difference between DROP and refusal.",
+      "adds": "Allows established return traffic, public-to-app TCP 8000, app-to-database TCP 5432, and database replication TCP 5432.",
+      "concepts": [
+        "FORWARD chain",
+        "conntrack",
+        "DROP policy",
+        "port segmentation"
+      ],
+      "steps": [
+        {
+          "title": "Start the firewall stage",
+          "copy": "Bring up the router with its forwarding policy applied by the entrypoint.",
+          "commands": [
+            "bash scripts/compose-stage.sh 08 up -d --build"
+          ]
+        },
+        {
+          "title": "Read rules and counters",
+          "copy": "Inspect the rule order before generating traffic.",
+          "commands": [
+            "bash scripts/compose-stage.sh 08 exec lab-router iptables -L FORWARD -n -v --line-numbers",
+            "bash scripts/compose-stage.sh 08 exec lab-router iptables -S FORWARD"
+          ]
+        },
+        {
+          "title": "Compare permitted and dropped flows",
+          "copy": "A timeout indicates a drop; a refusal means a host was reached but no service listened.",
+          "commands": [
+            "bash scripts/compose-stage.sh 08 exec lab-router iptables -L FORWARD -n -v --line-numbers"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "Why is one ESTABLISHED,RELATED rule enough for replies?",
+        "commands": [
+          "bash scripts/compose-stage.sh 08 exec lab-router iptables -S FORWARD"
+        ],
+        "expected": "Conntrack remembers the flow state, so permitted return traffic can match the state rule instead of needing a second reverse-direction allow rule."
+      },
+      "breakIt": {
+        "copy": "Flush FORWARD and compare a timeout caused by DROP with a refusal caused by a reachable host without a listener.",
+        "commands": [
+          "bash scripts/compose-stage.sh 08 exec lab-router iptables -F FORWARD"
+        ],
+        "reset": "bash scripts/compose-stage.sh 08 up -d --force-recreate lab-router"
+      },
+      "takeaway": "The route chooses the path; the firewall chooses whether the flow may use it.",
+      "repoPath": "chapters/08-iptables-firewall"
+    },
+    {
+      "id": "09",
+      "slug": "private-networks",
+      "title": "Private Networks",
+      "phase": "ROUTING FABRIC",
+      "summary": "Mark the application and database bridges as internal so their normal Docker egress path disappears.",
+      "goal": "Make application and database networks private at the Docker bridge layer.",
+      "adds": "Sets internal: true on app_a, app_b, db_a, and db_b. The lab router can still route between attached internal zones.",
+      "concepts": [
+        "internal: true",
+        "private boundary",
+        "external egress",
+        "route vs policy"
+      ],
+      "steps": [
+        {
+          "title": "Inspect the rendered Compose",
+          "copy": "Confirm which networks now carry the internal flag.",
+          "commands": [
+            "bash scripts/compose-stage.sh 09 config"
+          ]
+        },
+        {
+          "title": "Read the private route table",
+          "copy": "Inspect app-a-test before a NAT gateway exists.",
+          "commands": [
+            "bash scripts/compose-stage.sh 09 exec app-a-test ip route"
+          ]
+        },
+        {
+          "title": "Keep the distinction clear",
+          "copy": "A private bridge is not the same thing as a firewall policy. The router still controls forwarded lab traffic.",
+          "commands": [
+            "bash scripts/compose-stage.sh 09 exec app-a-test ip route get 10.10.21.10"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What disappears before chapter 10?",
+        "commands": [
+          "bash scripts/compose-stage.sh 09 exec app-a-test ip route"
+        ],
+        "expected": "There is no useful direct path to an external address, while an explicit route through lab-router can still reach another lab subnet when policy allows it."
+      },
+      "breakIt": {
+        "copy": "Try to reach a public address from app-a-test before NAT. Record the route and failure without changing the stack.",
+        "commands": [
+          "bash scripts/compose-stage.sh 09 exec app-a-test ping -c 2 8.8.8.8"
+        ],
+        "reset": "bash scripts/compose-stage.sh 09 down"
+      },
+      "takeaway": "Private means no default external attachment, not invisible or unreachable from every lab container.",
+      "repoPath": "chapters/09-private-networks"
+    },
+    {
+      "id": "10",
+      "slug": "nat-gateway",
+      "title": "NAT Gateway",
+      "phase": "ROUTING FABRIC",
+      "summary": "Separate routing from address translation and provide controlled egress for private application networks.",
+      "goal": "Follow a private packet to the NAT gateway, then observe MASQUERADE rewrite the source after routing chooses the interface.",
+      "adds": "Attaches nat-gateway to both app networks and nat_public. App default routes point to it and the gateway MASQUERADEs app traffic.",
+      "concepts": [
+        "default route",
+        "NAT gateway",
+        "MASQUERADE",
+        "conntrack translation"
+      ],
+      "steps": [
+        {
+          "title": "Inspect the selected route",
+          "copy": "Ask app-a which next hop and interface it will use for the public NAT network.",
+          "commands": [
+            "bash scripts/compose-stage.sh 10 exec app-a-test ip route get 10.10.30.10"
+          ]
+        },
+        {
+          "title": "Inspect translation rules",
+          "copy": "Read POSTROUTING before generating the request.",
+          "commands": [
+            "bash scripts/compose-stage.sh 10 exec nat-gateway iptables -t nat -L POSTROUTING -n -v"
+          ]
+        },
+        {
+          "title": "Run the egress check",
+          "copy": "Run the repository NAT test and compare the rule counters afterward.",
+          "commands": [
+            "bash scripts/test-nat.sh"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What happens first: routing or NAT?",
+        "commands": [
+          "bash scripts/compose-stage.sh 10 exec app-a-test ip route get 10.10.30.10"
+        ],
+        "expected": "Routing chooses the egress interface and next hop first. MASQUERADE rewrites the source afterward; it does not choose a route."
+      },
+      "breakIt": {
+        "copy": "Delete the NAT gateway default route while leaving MASQUERADE configured. The counters should stay unchanged.",
+        "commands": [
+          "bash scripts/compose-stage.sh 10 exec nat-gateway ip route"
+        ],
+        "reset": "bash scripts/compose-stage.sh 10 up -d --force-recreate nat-gateway"
+      },
+      "takeaway": "Route first, translate second.",
+      "repoPath": "chapters/10-nat-gateway"
+    },
+    {
+      "id": "11",
+      "slug": "docker-dns",
+      "title": "Docker DNS",
+      "phase": "SERVICES",
+      "summary": "Separate raw IP connectivity from hostname resolution inside user-defined Docker networks.",
+      "goal": "Distinguish Docker embedded DNS, service discovery, upstream DNS, routing, and TCP reachability.",
+      "adds": "Adds no topology. It inspects the accumulated stack and compares IP and DNS tests.",
+      "concepts": [
+        "127.0.0.11",
+        "service discovery",
+        "upstream resolver",
+        "IP vs hostname"
+      ],
+      "steps": [
+        {
+          "title": "Inspect the resolver",
+          "copy": "Read the resolver endpoint Docker puts inside app-a-test.",
+          "commands": [
+            "bash scripts/compose-stage.sh 11 exec app-a-test cat /etc/resolv.conf"
+          ]
+        },
+        {
+          "title": "Resolve a service name",
+          "copy": "Ask Docker for a name that exists in the shared network view.",
+          "commands": [
+            "bash scripts/compose-stage.sh 11 exec app-a-test getent hosts postgres-primary"
+          ]
+        },
+        {
+          "title": "Compare public DNS",
+          "copy": "Check a public hostname separately from service discovery.",
+          "commands": [
+            "bash scripts/compose-stage.sh 11 exec app-a-test getent hosts example.com",
+            "bash scripts/compose-stage.sh 11 exec app-a-test ip route"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "If a raw IP works but a hostname fails, which layer is suspect?",
+        "commands": [
+          "bash scripts/compose-stage.sh 11 exec app-a-test cat /etc/resolv.conf"
+        ],
+        "expected": "Investigate DNS first. Name resolution does not prove a route, firewall rule, listener, or application authentication will work."
+      },
+      "breakIt": {
+        "copy": "Replace resolv.conf with a bad nameserver and compare a known IP request with a hostname request.",
+        "commands": [
+          "bash scripts/compose-stage.sh 11 exec app-a-test getent hosts example.com"
+        ],
+        "reset": "bash scripts/compose-stage.sh 11 up -d --force-recreate app-a-test"
+      },
+      "takeaway": "DNS answers an IP-name question; it does not prove the rest of the packet path.",
+      "repoPath": "chapters/11-docker-dns"
+    },
+    {
+      "id": "12",
+      "slug": "nginx-public-access",
+      "title": "Nginx Public Access",
+      "phase": "SERVICES",
+      "summary": "Put an application-layer reverse proxy on each public subnet and route its upstream request to the matching private app.",
+      "goal": "Expose the app through Nginx without placing the app itself on the public network.",
+      "adds": "Turns the app diagnostics into Python HTTP servers and adds nginx-a/nginx-b at .3 on the public bridges.",
+      "concepts": [
+        "reverse proxy",
+        "proxy_pass",
+        "HTTP",
+        "two TCP connections"
+      ],
+      "steps": [
+        {
+          "title": "Check the public path",
+          "copy": "Request the public A and public B proxy addresses from their matching clients.",
+          "commands": [
+            "bash scripts/compose-stage.sh 12 exec public-a-test curl -sS http://10.10.1.3",
+            "bash scripts/compose-stage.sh 12 exec public-b-test curl -sS http://10.10.2.3"
+          ]
+        },
+        {
+          "title": "Validate Nginx config",
+          "copy": "Let Nginx validate its configuration before interpreting network failures.",
+          "commands": [
+            "bash scripts/compose-stage.sh 12 exec nginx-a nginx -t"
+          ]
+        },
+        {
+          "title": "Follow the two connections",
+          "copy": "Client-to-Nginx and Nginx-to-app are separate requests with different boundaries.",
+          "commands": [
+            "bash scripts/compose-stage.sh 12 exec nginx-a curl -sS http://10.10.11.10:8000"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What does proxy success prove?",
+        "commands": [
+          "bash scripts/compose-stage.sh 12 exec public-a-test curl -sS http://10.10.1.3"
+        ],
+        "expected": "The public client can reach Nginx and Nginx can reach app-a-test:8000 through the router. It does not mean direct public-to-app traffic is allowed."
+      },
+      "breakIt": {
+        "copy": "Stop nginx-a and compare public A failure with a direct app request from the router.",
+        "commands": [
+          "bash scripts/compose-stage.sh 12 stop nginx-a"
+        ],
+        "reset": "bash scripts/compose-stage.sh 12 up -d --force-recreate nginx-a"
+      },
+      "takeaway": "A reverse proxy terminates one connection and creates another.",
+      "repoPath": "chapters/12-nginx-public-access"
+    },
+    {
+      "id": "13",
+      "slug": "postgres-primary",
+      "title": "PostgreSQL Primary",
+      "phase": "SERVICES",
+      "summary": "Add a writable database to the database tier and validate the path at TCP, SQL, process, and authentication layers.",
+      "goal": "Validate application-to-database routing at TCP and SQL layers without confusing network filtering with pg_hba.conf.",
+      "adds": "Adds postgres-primary at 10.10.21.20, return routes to both app networks and the future replica, and replication settings for chapter 15.",
+      "concepts": [
+        "TCP handshake",
+        "FORWARD vs pg_hba.conf",
+        "writable primary",
+        "WAL"
+      ],
+      "steps": [
+        {
+          "title": "Test transport reachability",
+          "copy": "Use netcat to prove the TCP handshake before testing SQL.",
+          "commands": [
+            "bash scripts/compose-stage.sh 13 exec app-a-test nc -vz -w 3 10.10.21.20 5432"
+          ]
+        },
+        {
+          "title": "Run a SQL query",
+          "copy": "The database layer is a separate check after the port is open.",
+          "commands": [
+            "bash scripts/compose-stage.sh 13 exec postgres-primary psql -U labadmin -d labdb -c 'SELECT version();'"
+          ]
+        },
+        {
+          "title": "Inspect the server process",
+          "copy": "Confirm the primary is writable and ready for a future standby.",
+          "commands": [
+            "bash scripts/compose-stage.sh 13 exec postgres-primary ps -ef"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What does nc prove, and what does it not prove?",
+        "commands": [
+          "bash scripts/compose-stage.sh 13 exec app-a-test nc -vz -w 3 10.10.21.20 5432"
+        ],
+        "expected": "It proves a TCP handshake. It does not prove PostgreSQL authentication, pg_hba.conf acceptance, or SQL correctness."
+      },
+      "breakIt": {
+        "copy": "Remove the primary route to app_a and observe the client-side connection hang despite the router forward rule.",
+        "commands": [
+          "bash scripts/compose-stage.sh 13 exec postgres-primary ip route"
+        ],
+        "reset": "bash scripts/compose-stage.sh 13 up -d --force-recreate postgres-primary"
+      },
+      "takeaway": "iptables decides whether the packet crosses; PostgreSQL decides whether the session is accepted.",
+      "repoPath": "chapters/13-postgres-primary"
+    },
+    {
+      "id": "14",
+      "slug": "postgres-process-model",
+      "title": "PostgreSQL Processes and Job Control",
+      "phase": "SERVICES",
+      "summary": "Connect the container PID 1 model to PostgreSQL main, background, and client backend processes.",
+      "goal": "Understand how one database service becomes a coordinated process family and how shell job control differs from container persistence.",
+      "adds": "Adds no topology. The primary from chapter 13 is the process laboratory.",
+      "concepts": [
+        "main server",
+        "client backend",
+        "background worker",
+        "Ctrl-Z / bg / fg"
+      ],
+      "steps": [
+        {
+          "title": "List the PostgreSQL process family",
+          "copy": "See the main server, checkpointer, WAL writer, autovacuum, and backend processes.",
+          "commands": [
+            "bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef"
+          ]
+        },
+        {
+          "title": "Identify your SQL backend",
+          "copy": "Ask PostgreSQL which operating-system process serves the current session.",
+          "commands": [
+            "bash scripts/compose-stage.sh 14 exec postgres-primary psql -U labadmin -d labdb -c 'SELECT pg_backend_pid();'"
+          ]
+        },
+        {
+          "title": "Practice shell job control",
+          "copy": "Use a disposable shell for Ctrl-Z, bg, jobs, and fg. Do not background the database process itself.",
+          "commands": [
+            "bash scripts/compose-stage.sh 14 exec postgres-primary sh"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What happens if one client backend dies?",
+        "commands": [
+          "bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef"
+        ],
+        "expected": "The PostgreSQL server and background processes remain alive. The client session is one process in a larger supervised service."
+      },
+      "breakIt": {
+        "copy": "Kill one client backend from a test connection and explain why the server remains healthy.",
+        "commands": [
+          "bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef"
+        ],
+        "reset": "bash scripts/compose-stage.sh 14 up -d --force-recreate postgres-primary"
+      },
+      "takeaway": "Shell job control is not a replacement for a supervised container process.",
+      "repoPath": "chapters/14-postgres-process-model"
+    },
+    {
+      "id": "15",
+      "slug": "physical-replication",
+      "title": "Physical Streaming Replication",
+      "phase": "RECOVERY",
+      "summary": "Copy the primary cluster into a second database subnet, then observe WAL stream and replay on a read-only standby.",
+      "goal": "Initialize a standby with pg_basebackup and observe WAL streaming across the routed database subnets.",
+      "adds": "Adds postgres-replica at 10.10.22.20 and intentionally starts it as sleep infinity so it cannot initialize a conflicting cluster first.",
+      "concepts": [
+        "pg_basebackup",
+        "WAL",
+        "standby.signal",
+        "primary_conninfo"
+      ],
+      "steps": [
+        {
+          "title": "Prepare the standby directory",
+          "copy": "Enter the replica, clear the target directory, and restore PostgreSQL ownership and permissions.",
+          "commands": [
+            "bash scripts/compose-stage.sh 15 exec postgres-replica sh",
+            "rm -rf /var/lib/postgresql/data/*",
+            "install -d -o postgres -g postgres -m 700 /var/lib/postgresql/data"
+          ]
+        },
+        {
+          "title": "Copy the physical cluster",
+          "copy": "Run pg_basebackup with streaming WAL and generated standby configuration.",
+          "commands": [
+            "su postgres -c 'PGPASSWORD=replica_password pg_basebackup -h 10.10.21.20 -U replicator -D /var/lib/postgresql/data -Fp -Xs -P -R'"
+          ]
+        },
+        {
+          "title": "Start and verify recovery",
+          "copy": "Start PostgreSQL on the replica and compare recovery and replication state.",
+          "commands": [
+            "su postgres -c 'postgres -D /var/lib/postgresql/data'",
+            "SELECT pg_is_in_recovery();",
+            "SELECT client_addr, state FROM pg_stat_replication;"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What proves this is streaming replication?",
+        "commands": [
+          "bash scripts/compose-stage.sh 15 exec postgres-replica psql -U labadmin -d labdb -c 'SELECT pg_is_in_recovery();'"
+        ],
+        "expected": "The replica returns t, the primary returns f, and the primary reports the replica as streaming. Inserts on the primary appear on the read-only replica."
+      },
+      "breakIt": {
+        "copy": "Run pg_basebackup against a non-empty data directory and explain why the replica must not initialize its own unrelated cluster first.",
+        "commands": [
+          "bash scripts/compose-stage.sh 15 exec postgres-replica ls -la /var/lib/postgresql/data"
+        ],
+        "reset": "bash scripts/compose-stage.sh 15 down -v"
+      },
+      "takeaway": "Base backup gives the starting state; WAL streaming gives the ongoing state.",
+      "repoPath": "chapters/15-physical-replication"
+    },
+    {
+      "id": "16",
+      "slug": "runtime-persistence",
+      "title": "Runtime Configuration Persistence",
+      "phase": "RECOVERY",
+      "summary": "Move manual routes and replica bootstrap into idempotent entrypoints so recreation converges on the same runtime state.",
+      "goal": "Make routes and replica bootstrap repeatable with ip route replace, a named volume, PG_VERSION, and exec.",
+      "adds": "The replica entrypoint waits for the primary, runs pg_basebackup only for an empty volume, writes a password file, and delegates to the official PostgreSQL entrypoint.",
+      "concepts": [
+        "idempotent setup",
+        "ip route replace",
+        "named volume",
+        "exec and PID 1"
+      ],
+      "steps": [
+        {
+          "title": "Start the persistent stage",
+          "copy": "Build and wait for the complete stack.",
+          "commands": [
+            "bash scripts/compose-stage.sh 16 up -d --build --wait"
+          ]
+        },
+        {
+          "title": "Verify standby state",
+          "copy": "Check the replica and primary from inside their containers.",
+          "commands": [
+            "bash scripts/compose-stage.sh 16 exec postgres-replica psql -U labadmin -d labdb -c 'SELECT pg_is_in_recovery();'",
+            "bash scripts/compose-stage.sh 16 exec postgres-primary psql -U labadmin -d labdb -c 'SELECT client_addr, state FROM pg_stat_replication;'"
+          ]
+        },
+        {
+          "title": "Recreate and compare",
+          "copy": "Restart the replica and inspect logs for readiness, standby mode, and WAL streaming.",
+          "commands": [
+            "bash scripts/compose-stage.sh 16 up -d --force-recreate postgres-replica",
+            "bash scripts/compose-stage.sh 16 logs postgres-replica"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "Which state survives recreation?",
+        "commands": [
+          "bash scripts/compose-stage.sh 16 logs postgres-replica"
+        ],
+        "expected": "A clean volume performs one base backup. A restart keeps the cluster and reapplies routes without copying the database again."
+      },
+      "breakIt": {
+        "copy": "Compare a route added manually in a disposable diagnostic container with a route restored by the entrypoint.",
+        "commands": [
+          "bash scripts/compose-stage.sh 16 exec postgres-replica ip route"
+        ],
+        "reset": "bash scripts/compose-stage.sh 16 down -v"
+      },
+      "takeaway": "Persistent behavior belongs in the image, entrypoint, Compose file, or volume.",
+      "repoPath": "chapters/16-runtime-persistence"
+    },
+    {
+      "id": "17",
+      "slug": "failure-testing",
+      "title": "Failure Testing and Cloud Mapping",
+      "phase": "RECOVERY",
+      "summary": "Turn the whole lab into a repeatable test surface and learn to locate the first layer where behavior changes.",
+      "goal": "Validate the final architecture, remove one dependency at a time, and map the result to VPC concepts without treating Docker as a managed cloud service.",
+      "adds": "Adds no new service. It adds verification scripts and completes the final teaching loop.",
+      "concepts": [
+        "failure protocol",
+        "diagnostic order",
+        "VPC analogy",
+        "recovery"
+      ],
+      "steps": [
+        {
+          "title": "Start from a passing checkpoint",
+          "copy": "Bring up the final cumulative stage and wait for services to be ready.",
+          "commands": [
+            "bash scripts/compose-stage.sh 17 up -d --build --wait"
+          ]
+        },
+        {
+          "title": "Run focused checks",
+          "copy": "Validate routing, firewalling, NAT, and replication separately.",
+          "commands": [
+            "bash scripts/test-routing.sh",
+            "bash scripts/test-firewall.sh",
+            "bash scripts/test-nat.sh",
+            "bash scripts/test-replication.sh"
+          ]
+        },
+        {
+          "title": "Change one dependency",
+          "copy": "Record the symptom, identify the first layer that changed, restore, and rerun every check.",
+          "commands": [
+            "bash scripts/compose-stage.sh 17 down -v"
+          ]
+        }
+      ],
+      "checkpoint": {
+        "question": "What is the diagnostic order?",
+        "commands": [
+          "bash scripts/test-routing.sh",
+          "bash scripts/test-firewall.sh",
+          "bash scripts/test-nat.sh",
+          "bash scripts/test-replication.sh"
+        ],
+        "expected": "Route, neighbor, packet capture, firewall, TCP listener, application protocol, then authentication. Map Docker bridge to VPC subnet, router to routing fabric, and the replica to a standby."
+      },
+      "breakIt": {
+        "copy": "Run one failure at a time: delete an app return route, change FORWARD to ACCEPT, stop nginx-a, stop the primary, or remove the replica WAL connection.",
+        "commands": [
+          "bash scripts/compose-stage.sh 17 down -v"
+        ],
+        "reset": "bash scripts/compose-stage.sh 17 up -d --build --wait"
+      },
+      "takeaway": "A useful system makes failure visible, local, and recoverable.",
+      "repoPath": "chapters/17-failure-testing"
+    }
+  ],
+  "alternateChapter": {
+    "id": "05B",
+    "slug": "routed-network-chain",
+    "title": "Routed Network Chain",
+    "phase": "ALTERNATE LAB",
+    "summary": "A standalone chain of four networks joined by three two-interface routers.",
+    "goal": "Identify connected routes, choose static next hops, trace multiple Layer-3 hops, and validate the return path.",
+    "adds": "Uses net_1 through net_4 at 10.50.1.0/24 through 10.50.4.0/24 with lab-router-1, lab-router-2, and lab-router-3.",
+    "concepts": [
+      "multi-hop routing",
+      "router chain",
+      "next hop",
+      "return path"
+    ],
+    "steps": [
+      {
+        "title": "Start the alternate topology",
+        "copy": "This lab is standalone and is not combined with chapter 05 standard topology.",
+        "commands": [
+          "bash scripts/compose-stage.sh 05b up -d",
+          "bash scripts/compose-stage.sh 05b ps"
+        ]
+      },
+      {
+        "title": "Read each hop",
+        "copy": "Inspect the router interfaces and connected routes across the four networks.",
+        "commands": [
+          "bash scripts/compose-stage.sh 05b exec lab-router-1 ip route",
+          "bash scripts/compose-stage.sh 05b exec lab-router-2 ip route",
+          "bash scripts/compose-stage.sh 05b exec lab-router-3 ip route"
+        ]
+      },
+      {
+        "title": "Trace the chain",
+        "copy": "Follow shell-1 to shell-3 through two Layer-3 hops and verify the reverse path.",
+        "commands": [
+          "bash scripts/compose-stage.sh 05b exec shell-1 ping -c 2 10.50.3.10"
+        ]
+      }
+    ],
+    "checkpoint": {
+      "question": "How many hops separate shell-1 and shell-3?",
+      "commands": [
+        "bash scripts/compose-stage.sh 05b exec shell-1 ip route get 10.50.3.10"
+      ],
+      "expected": "The packet crosses lab-router-1 and lab-router-2. The reply must cross them in reverse."
+    },
+    "breakIt": {
+      "copy": "Remove one static route in the chain and observe the hop where traffic stops.",
+      "commands": [
+        "bash scripts/compose-stage.sh 05b exec shell-1 ip route"
+      ],
+      "reset": "bash scripts/compose-stage.sh 05b down"
+    },
+    "takeaway": "A multi-hop route is a series of correct local next-hop decisions.",
+    "repoPath": "chapters/05b-muliti-router"
+  },
+  "courseModules": [
+    {
+      "title": "Foundation",
+      "range": "01 - 04",
+      "copy": "Build the process, bridge, namespace, and permission mental models before routing anything.",
+      "start": 0,
+      "end": 4
+    },
+    {
+      "title": "Routing and packet flow",
+      "range": "05 - 07",
+      "copy": "Introduce the router, teach endpoints their next hops, and prove the path with packet capture.",
+      "start": 4,
+      "end": 7
+    },
+    {
+      "title": "Traffic control and egress",
+      "range": "08 - 11",
+      "copy": "Apply stateful policy, make networks private, add NAT, and separate DNS from reachability.",
+      "start": 7,
+      "end": 11
+    },
+    {
+      "title": "Service and data tier",
+      "range": "12 - 16",
+      "copy": "Expose HTTP through Nginx, add PostgreSQL, build a standby, and make runtime state repeatable.",
+      "start": 11,
+      "end": 16
+    },
+    {
+      "title": "Failure and cloud mapping",
+      "range": "17",
+      "copy": "Validate the final system, inject one failure at a time, and map the lab to cloud concepts without confusing the two.",
+      "start": 16,
+      "end": 17
+    }
+  ],
+  "chapterEnhancements": {
+    "10": {
+      "state": "Private app networks / nat-gateway / nat_public egress network / MASQUERADE",
+      "prediction": {
+        "question": "Does MASQUERADE decide which interface a private packet should leave through?",
+        "choices": [
+          "Yes, NAT performs routing",
+          "No, routing chooses the path first"
+        ],
+        "answer": 1,
+        "explanation": "Routing chooses the egress path. MASQUERADE then rewrites the source address for traffic leaving through the selected external interface."
+      }
+    },
+    "11": {
+      "state": "No topology change / compare Docker DNS, upstream DNS, and raw IP reachability",
+      "prediction": {
+        "question": "A raw IP request works but the equivalent hostname lookup fails. Which layer should be investigated first?",
+        "choices": [
+          "DNS",
+          "iptables FORWARD",
+          "PostgreSQL authentication"
+        ],
+        "answer": 0,
+        "explanation": "Raw IP reachability already demonstrates that name resolution is not required for that path. Start at DNS before changing routing or firewall rules."
+      }
+    },
+    "12": {
+      "state": "nginx-a/nginx-b on public subnets / Python HTTP apps on private app subnets",
+      "prediction": {
+        "question": "When Nginx reverse-proxies a request to app-a-test, is the client-to-Nginx TCP connection the same connection as Nginx-to-app?",
+        "choices": [
+          "Yes",
+          "No, they are separate connections"
+        ],
+        "answer": 1,
+        "explanation": "Nginx terminates the client connection and creates an upstream connection. Each leg can fail at a different network boundary."
+      }
+    },
+    "13": {
+      "state": "Writable PostgreSQL primary on db_a / app-to-database routing and database policy",
+      "prediction": {
+        "question": "`nc` successfully connects to TCP 5432. Does that prove PostgreSQL will accept the user and SQL query?",
+        "choices": [
+          "Yes",
+          "No"
+        ],
+        "answer": 1,
+        "explanation": "A TCP handshake proves transport reachability. PostgreSQL authentication, pg_hba.conf policy, database existence, and SQL correctness are later layers."
+      }
+    },
+    "14": {
+      "state": "PostgreSQL primary unchanged / process family and shell job-control inspection",
+      "prediction": {
+        "question": "If one PostgreSQL client backend process exits, should the entire PostgreSQL server stop?",
+        "choices": [
+          "Yes",
+          "No"
+        ],
+        "answer": 1,
+        "explanation": "Client backends are members of a larger PostgreSQL process family. The main server and background processes continue serving other sessions."
+      }
+    },
+    "15": {
+      "state": "Primary on db_a / manual standby bootstrap on db_b / WAL streaming",
+      "prediction": {
+        "question": "Can a replica begin from an unrelated PostgreSQL data directory and become a physical standby by receiving only new WAL records?",
+        "choices": [
+          "Yes",
+          "No, it needs a compatible base state first"
+        ],
+        "answer": 1,
+        "explanation": "Physical replication needs the same underlying cluster state. pg_basebackup creates that starting point; WAL streaming advances it afterward."
+      }
+    },
+    "16": {
+      "state": "Named PostgreSQL volume / idempotent entrypoints / routes reapplied on recreation",
+      "prediction": {
+        "question": "Will an `ip route add` performed manually inside a running container survive that container being recreated?",
+        "choices": [
+          "Yes",
+          "No"
+        ],
+        "answer": 1,
+        "explanation": "The network namespace is recreated with the container. Runtime routes must be expressed in startup logic or another persistent configuration mechanism."
+      }
+    },
+    "17": {
+      "state": "Final cumulative stack / routing, firewall, NAT, HTTP, database, replication and failure checks",
+      "prediction": {
+        "question": "During a failure experiment, should you break several dependencies at once to reveal more problems quickly?",
+        "choices": [
+          "Yes",
+          "No, change one dependency at a time"
+        ],
+        "answer": 1,
+        "explanation": "Controlled failure injection keeps cause and effect observable. Establish a passing baseline, change one dependency, locate the first changed layer, restore, and retest."
+      }
+    },
+    "01": {
+      "state": "1 seed container / no custom network yet",
+      "prediction": {
+        "question": "If PID 1 exits but another process still exists in the container namespace, does Docker keep the container running?",
+        "choices": [
+          "Yes, another process takes over",
+          "No, the container stops",
+          "Only if the process is root"
+        ],
+        "answer": 1,
+        "explanation": "Docker treats PID 1 as the lifecycle anchor. When that process exits, the container stops and the remaining processes do not keep it alive."
+      }
+    },
+    "02": {
+      "state": "6 bridge networks / 6 diagnostic containers / no router",
+      "prediction": {
+        "question": "After creating app_a and app_b as separate Docker bridges, can app-a-test reach app-b-test without adding a router?",
+        "choices": [
+          "Yes",
+          "No"
+        ],
+        "answer": 1,
+        "explanation": "Each bridge is its own Layer-2 boundary. The endpoints only know their connected network, and no Layer-3 device connects the two bridges yet."
+      }
+    },
+    "03": {
+      "state": "6 isolated bridges / inspect one container namespace at a time",
+      "prediction": {
+        "question": "Before app-a-test sends any traffic, should `ip neigh` already contain every container on its Docker network?",
+        "choices": [
+          "Yes, Docker preloads them",
+          "No, neighbors are learned as needed"
+        ],
+        "answer": 1,
+        "explanation": "The neighbor table is runtime evidence of Layer-2 resolution. It is populated as destinations or next hops are actually used."
+      }
+    },
+    "04": {
+      "state": "Reusable lab-tools image / capability experiments / six-network topology retained",
+      "prediction": {
+        "question": "A process is UID 0 inside a container. Without NET_ADMIN, can it modify the container routing table?",
+        "choices": [
+          "Yes, root bypasses the capability model",
+          "No, NET_ADMIN is still required"
+        ],
+        "answer": 1,
+        "explanation": "Container root is constrained by Linux capabilities. Identity and permission are separate questions."
+      }
+    },
+    "05": {
+      "state": "6 subnets / 6 endpoints / 1 router attached to every subnet",
+      "prediction": {
+        "question": "Once lab-router has an interface on all six subnets, do the endpoint containers automatically learn routes through it?",
+        "choices": [
+          "Yes",
+          "No"
+        ],
+        "answer": 1,
+        "explanation": "The router learns connected routes for its own interfaces. The endpoints still need their own route entries telling them to use the router as a next hop."
+      }
+    },
+    "05B": {
+      "state": "4 networks / 3 two-interface routers / standalone multi-hop lab",
+      "prediction": {
+        "question": "Can shell-1 use a router address that exists only on a remote subnet as its immediate next hop?",
+        "choices": [
+          "Yes",
+          "No"
+        ],
+        "answer": 1,
+        "explanation": "A next hop must be directly reachable on the sender\u2019s local network. Multi-hop routing works as a sequence of local next-hop decisions."
+      }
+    },
+    "06": {
+      "state": "6 subnets / multi-homed router / endpoint static routes and return routes",
+      "prediction": {
+        "question": "From app-a-test (10.10.11.10), which router address is a valid next hop toward app_b (10.10.12.0/24)?",
+        "choices": [
+          "10.10.11.2",
+          "10.10.12.2",
+          "10.10.11.1"
+        ],
+        "answer": 0,
+        "explanation": "app-a-test must send to the router interface on its own local app_a subnet: 10.10.11.2. The remote router interface is not directly reachable at Layer 2."
+      }
+    },
+    "07": {
+      "state": "Routed six-subnet topology / tcpdump used as packet-path evidence",
+      "prediction": {
+        "question": "tcpdump sees a packet enter the router but never sees it leave the expected egress interface. Where should you investigate first?",
+        "choices": [
+          "DNS",
+          "The router route/forwarding/firewall decision",
+          "The destination application password"
+        ],
+        "answer": 1,
+        "explanation": "The packet already reached the router. The missing egress packet narrows the problem to the router\u2019s Layer-3 forwarding decision or filtering before the destination service is relevant."
+      }
+    },
+    "08": {
+      "state": "Router FORWARD policy is default-deny / allowed flows are explicit and stateful",
+      "prediction": {
+        "question": "If App \u2192 Public new connections are blocked, can an app container still send a reply to a Public \u2192 App connection that was already allowed?",
+        "choices": [
+          "Yes, with ESTABLISHED/RELATED state",
+          "No, all App \u2192 Public packets must be dropped"
+        ],
+        "answer": 0,
+        "explanation": "Conntrack distinguishes a reply in an established connection from a brand-new connection initiated by the app tier."
+      }
+    },
+    "09": {
+      "state": "Application and database bridges become Docker internal networks",
+      "prediction": {
+        "question": "Does `internal: true` prevent two containers on the same private Docker network from communicating with each other?",
+        "choices": [
+          "Yes",
+          "No"
+        ],
+        "answer": 1,
+        "explanation": "The containers still share their private bridge. The setting removes ordinary external reachability through Docker\u2019s gateway; it does not erase local communication."
+      }
+    }
+  },
+  "courseLoop": [
+    "Build",
+    "Run",
+    "Observe",
+    "Break",
+    "Explain",
+    "Fix",
+    "Retest",
+    "Questions"
+  ]
+}

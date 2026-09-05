@@ -1,0 +1,267 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Make application and database networks private at the Docker bridge layer. Mark the application and database bridges as internal so their normal Docker…"><meta name="theme-color" content="#101515"><title>Docker Private Networks — internal:true &amp; Network Isolation | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/private-networks/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="Docker Private Networks — internal:true &amp; Network Isolation | Ayo Olowoleru"><meta property="og:description" content="Make application and database networks private at the Docker bridge layer. Mark the application and database bridges as internal so their normal Docker…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/private-networks/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"Private Networks","item":"https://ayo-olowoleru.xyz/labs/docker-networking/private-networks/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Docker Private Networks — internal:true & Network Isolation","description":"Make application and database networks private at the Docker bridge layer. Mark the application and database bridges as internal so their normal Docker…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/private-networks/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["internal: true","private boundary","external egress","route vs policy"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>ROUTING FABRIC</span><span>Chapter 09</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/09-private-networks/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 09 / ROUTING FABRIC</span><h1>Private Networks<br><em>Mark the application and database bridges as internal so their normal Docker egress path disappears.</em></h1><p>Make application and database networks private at the Docker bridge layer.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>09<small>/ 17</small></strong><p>Private means no default external attachment, not invisible or unreachable from every lab container.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>09 / 17</span></div><div class="chapter-rail-progress"><span style="width:52.9%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link is-current" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/09-private-networks/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 09 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Sets internal: true on app_a, app_b, db_a, and db_b. The lab router can still route between attached internal zones.</p></div><div><span>Lab state</span><p>Application and database bridges become Docker internal networks</p><div class="chapter-tags"><span>internal: true</span><span>private boundary</span><span>external egress</span><span>route vs policy</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>Private means no default external attachment, not invisible or unreachable from every lab container.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/09-private-networks/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-09.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-09.svg" alt="Private Networks topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Inspect the rendered Compose</h3><p>Confirm which networks now carry the internal flag.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 09 config</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 09 config">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Read the private route table</h3><p>Inspect app-a-test before a NAT gateway exists.</p><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 09 exec app-a-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 09 exec app-a-test ip route">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Keep the distinction clear</h3><p>A private bridge is not the same thing as a firewall policy. The router still controls forwarded lab traffic.</p><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 09 exec app-a-test ip route get 10.10.21.10</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 09 exec app-a-test ip route get 10.10.21.10">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Try to reach a public address from app-a-test before NAT. Record the route and failure without changing the stack.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 09 exec app-a-test ping -c 2 8.8.8.8</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 09 exec app-a-test ping -c 2 8.8.8.8">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 09 down</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#key-concepts">Key Concepts</a><a href="#docker-internal-true">Docker internal: true</a><a href="#private-does-not-mean-invisible">Private Does Not Mean Invisible</a><a href="#three-separate-controls">Three Separate Controls</a><a href="#goal">Goal</a><a href="#progression-from-chapter-08">Progression From Chapter 08</a><a href="#what-this-stage-adds">What This Stage Adds</a></nav><div class="lesson-notes" data-static-notes><h3 id="key-concepts">Key Concepts</h3>
+<h4 id="docker-internal-true">Docker <code>internal: true</code></h4>
+<p>Docker user-defined bridge networks normally provide a path from an attached
+container toward the Docker host. Setting:</p>
+<pre><code class="language-yaml">internal: true
+</code></pre>
+<p>marks the network as internal. Docker does not provide the normal external
+egress path from that bridge. This is a boundary at the Docker network layer,
+not a replacement for routing or firewall rules.</p>
+<h4 id="private-does-not-mean-invisible">Private Does Not Mean Invisible</h4>
+<p>An internal network can still contain multiple attached containers. It is not
+encryption, and it does not prevent all traffic from every container. In this
+lab, <code>lab-router</code> is explicitly attached to the internal application and
+database networks, so it can still route between them when:</p>
+<pre><code class="language-text">the source has a route
+        +
+the router has a connected route and forwarding enabled
+        +
+the firewall permits the flow
+</code></pre>
+<h4 id="three-separate-controls">Three Separate Controls</h4>
+<p>Keep these controls separate in your reasoning:</p>
+<pre><code class="language-text">Docker internal network = normal host/external egress boundary
+route table             = where a packet is sent next
+iptables FORWARD        = whether a routed packet may cross the router
+</code></pre>
+<p>Changing one does not automatically change the others. A private network can
+still have a route, and a route can still be rejected by the firewall.</p>
+<h3 id="goal">Goal</h3>
+<p>Make the application and database Docker networks private at the bridge layer
+while retaining explicit routed access through <code>lab-router</code>. By the end, you
+should be able to:</p>
+<ul>
+<li>verify which Docker networks are marked internal;</li>
+<li>distinguish an internal bridge from a firewall rule;</li>
+<li>show that application traffic can still use an explicit lab route when the
+firewall permits it;</li>
+<li>explain why application egress does not work before a NAT gateway exists;</li>
+<li>recover a deliberately removed route by recreating the endpoint.</li>
+</ul>
+<h3 id="progression-from-chapter-08">Progression From Chapter 08</h3>
+<p>Chapter 08 put a default-deny <code>iptables</code> policy on <code>lab-router</code>. It controls
+forwarded packets after a route sends them toward the router.</p>
+<p>Chapter 09 leaves the firewall and the six static endpoint routes in place,
+then changes the Docker bridge definition for four networks:</p>
+<pre><code class="language-text">Chapter 08: route exists, firewall decides forwarded traffic
+        |
+        v
+Chapter 09: app and database bridges also block normal Docker host egress
+</code></pre>
+<p>The router remains the explicit path between lab subnets. The private bridge
+setting does not add NAT, so it does not yet provide external egress.</p>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>The Compose overlay sets <code>internal: true</code> on:</p>
+<pre><code class="language-text">app_a  10.10.11.0/24
+app_b  10.10.12.0/24
+db_a   10.10.21.0/24
+db_b   10.10.22.0/24
+</code></pre>
+<p>The <code>public_a</code> and <code>public_b</code> networks remain normal bridge networks. No
+service is added, and <code>nat_public</code> does not exist yet.</p>
+<p>The existing services remain:</p>
+<pre><code class="language-text">public-a-test   10.10.1.10
+public-b-test   10.10.2.10
+app-a-test      10.10.11.10
+app-b-test      10.10.12.10
+db-a-test       10.10.21.10
+db-b-test       10.10.22.10
+lab-router      .2 on every lab subnet
+</code></pre>
+<h3 id="progress-checklist">Progress Checklist</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Start the cumulative Chapter 09 lab.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Verify <code>internal=true</code> for <code>app_a</code>, <code>app_b</code>, <code>db_a</code>, and <code>db_b</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Confirm that <code>app-a-test</code> still routes lab traffic via <code>10.10.11.2</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Show that internal database traffic reaches the firewall path.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Show that no useful direct external egress exists yet.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Remove one route, observe the failure, and recover by recreating the app.</li>
+</ul>
+<h3 id="before-you-begin-terminal-roles">Before You Begin: Terminal Roles</h3>
+<p>Run commands from the repository root. Use two terminals when comparing route
+inspection and connection behavior:</p>
+<ul>
+<li><strong>Terminal A</strong> inspects Docker networks and <code>lab-router</code>.</li>
+<li><strong>Terminal B</strong> runs route and connection commands from <code>app-a-test</code>.</li>
+</ul>
+<p>Chapter 09 still has no HTTP server on the app endpoints and no PostgreSQL
+server. A permitted TCP connection to an unused port may therefore end with
+<code>Connection refused</code>; that is useful evidence that the packet reached the
+destination rather than being silently dropped.</p>
+<h3 id="tasks">Tasks</h3>
+<h4 id="task-1-start-the-private-network-stage">Task 1: Start the Private-Network Stage</h4>
+<p><strong>Predict.</strong> The service count should remain seven. The change should appear in
+the network metadata, not as a new container.</p>
+<p><strong>Run.</strong> From the repository root:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 up -d --build
+bash scripts/compose-stage.sh 09 ps
+</code></pre>
+<p><strong>Observe.</strong> Confirm that the six endpoint services and <code>lab-router</code> are
+running. Then ask Compose to show the resolved model:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 config
+</code></pre>
+<p>Find <code>networks</code> and the four <code>internal: true</code> entries. The exact order of the
+resolved YAML is not important.</p>
+<p><strong>Explain.</strong> Chapter 09 is a network-definition change. The containers keep
+their names, addresses, routes, and capabilities from earlier chapters.</p>
+<h4 id="task-2-verify-the-docker-network-boundary">Task 2: Verify the Docker Network Boundary</h4>
+<p><strong>Predict.</strong> <code>app_a</code>, <code>app_b</code>, <code>db_a</code>, and <code>db_b</code> should report <code>internal=true</code>.
+The two public networks should not.</p>
+<p><strong>Run.</strong> In Terminal A:</p>
+<pre><code class="language-bash">for network in app_a app_b db_a db_b; do
+  docker network inspect "docker-subnet_${network}" \
+    --format '{{.Name}} internal={{.Internal}} subnet={{range .IPAM.Config}}{{.Subnet}}{{end}}'
+done
+docker network inspect docker-subnet_public_a \
+  --format '{{.Name}} internal={{.Internal}} subnet={{range .IPAM.Config}}{{.Subnet}}{{end}}'
+</code></pre>
+<p>The runner uses the repository directory name as its Compose project name, so
+the network names are <code>docker-subnet_app_a</code>, <code>docker-subnet_db_a</code>, and so on.</p>
+<p><strong>Observe.</strong> The important fields should look like:</p>
+<pre><code class="language-text">docker-subnet_app_a internal=true subnet=10.10.11.0/24
+</code></pre>
+<p><strong>Explain.</strong> <code>internal=true</code> changes the bridge's normal external attachment.
+It does not remove the bridge, its IP subnet, or the explicitly attached
+<code>lab-router</code> interface.</p>
+<h4 id="task-3-compare-local-routed-and-external-destinations">Task 3: Compare Local, Routed, and External Destinations</h4>
+<p><strong>Predict.</strong> The Chapter 06 route to another lab subnet should still use
+<code>lab-router</code> at <code>10.10.11.2</code>. A destination outside the lab has no NAT gateway
+next hop yet and therefore has no useful external path.</p>
+<p><strong>Run.</strong> In Terminal B:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 exec app-a-test ip route
+bash scripts/compose-stage.sh 09 exec app-a-test \
+  ip route get 10.10.21.10
+bash scripts/compose-stage.sh 09 exec app-a-test \
+  ip route get 8.8.8.8
+</code></pre>
+<p><strong>Observe.</strong> The database destination should use a route similar to:</p>
+<pre><code class="language-text">10.10.21.10 via 10.10.11.2 dev eth0 src 10.10.11.10
+</code></pre>
+<p>The external lookup may show Docker's <code>10.10.11.1</code> default gateway or report
+that the network is unreachable, depending on Docker and kernel behavior. The
+important result is that it does not select a NAT gateway; Chapter 10 has not
+added one.</p>
+<p><strong>Explain.</strong> A route lookup reports a kernel decision, not a guarantee of
+end-to-end reachability. The private bridge can still have a local gateway
+entry while Docker prevents that bridge from providing normal external egress.</p>
+<h4 id="task-4-test-an-explicit-private-path-and-external-egress">Task 4: Test an Explicit Private Path and External Egress</h4>
+<p><strong>Predict.</strong> The firewall rule for <code>app_a -&gt; db_a TCP 5432</code> should permit the
+connection to cross <code>lab-router</code>. <code>db-a-test</code> has no PostgreSQL listener yet,
+so expect <code>Connection refused</code>, not a successful database session. An
+external request should fail because neither a NAT gateway nor an external
+service is present.</p>
+<p><strong>Run.</strong> First test the permitted application-to-database path:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 exec -T app-a-test \
+  nc -vz -w 3 10.10.21.10 5432
+</code></pre>
+<p>Now try a reserved documentation address so the test does not depend on an
+actual public Internet service:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 exec -T app-a-test \
+  curl --silent --show-error --connect-timeout 2 \
+  http://198.51.100.10:8080
+</code></pre>
+<p><strong>Observe.</strong> The database test should normally report <code>Connection refused</code>.
+The external curl should fail or time out. Do not interpret a route through
+<code>10.10.11.1</code> as working external egress. Inspect the router policy if the
+database test times out instead of being refused:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 exec lab-router \
+  iptables -L FORWARD -n -v --line-numbers
+</code></pre>
+<p><strong>Explain.</strong> The first test crossed an internal <code>app_a</code> bridge, reached the
+router, matched the Chapter 08 database allow rule, and reached <code>db-a-test</code>.
+The second test has no useful Docker egress path. The private network boundary
+and the router firewall are both involved, but they answer different
+questions.</p>
+<h4 id="task-5-confirm-the-router-is-still-explicitly-attached">Task 5: Confirm the Router Is Still Explicitly Attached</h4>
+<p><strong>Predict.</strong> Marking a network internal should not detach <code>lab-router</code>. The
+router should still have addresses on the app and database subnets.</p>
+<p><strong>Run.</strong> In Terminal A:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 exec lab-router ip -o -4 addr show
+bash scripts/compose-stage.sh 09 exec lab-router ip route
+</code></pre>
+<p><strong>Observe.</strong> Find these router addresses and connected routes:</p>
+<pre><code class="language-text">10.10.11.2/24 and 10.10.11.0/24
+10.10.12.2/24 and 10.10.12.0/24
+10.10.21.2/24 and 10.10.21.0/24
+10.10.22.2/24 and 10.10.22.0/24
+</code></pre>
+<p>Also confirm forwarding remains enabled:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 exec lab-router \
+  sysctl net.ipv4.ip_forward
+</code></pre>
+<p>The value should be <code>net.ipv4.ip_forward = 1</code>.</p>
+<p><strong>Explain.</strong> The router is an intentional attachment to each private zone.
+This is why internal networks can still participate in explicitly routed lab
+traffic. External egress needs a different design, which Chapter 10 supplies.</p>
+<h3 id="expected-observations">Expected Observations</h3>
+<p>The expected state is:</p>
+<pre><code class="language-text">app_a, app_b, db_a, db_b: internal=true
+public_a, public_b:       internal=false
+app-a-test -&gt; db_a:       route via 10.10.11.2; firewall permits TCP 5432
+app-a-test -&gt; external:   no useful direct egress path
+nat-gateway:              not present yet
+</code></pre>
+<p>The <code>nc</code> result against <code>10.10.21.10:5432</code> is a useful distinction:</p>
+<pre><code class="language-text">Connection refused = the packet reached db-a-test, but no service listens
+Timeout             = inspect the route and FORWARD policy
+</code></pre>
+<p>The private-network change is successful when the four network objects report
+<code>internal=true</code> while the router's private interfaces and connected routes are
+still present.</p>
+<h3 id="break-it-remove-one-private-route">Break It: Remove One Private Route</h3>
+<p>This exercise changes only runtime state inside <code>app-a-test</code>; it does not edit
+Compose files or Docker network metadata.</p>
+<p><strong>Predict.</strong> If the specific route to <code>db_a</code> is removed, <code>app-a-test</code> will no
+longer select <code>10.10.11.2</code> for <code>10.10.21.10</code>. The permitted private connection
+should fail or use an unusable Docker default path.</p>
+<p><strong>Run.</strong> In Terminal B:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 exec app-a-test \
+  ip route delete 10.10.21.0/24 via 10.10.11.2
+bash scripts/compose-stage.sh 09 exec app-a-test \
+  ip route get 10.10.21.10
+bash scripts/compose-stage.sh 09 exec -T app-a-test \
+  nc -vz -w 3 10.10.21.10 5432
+</code></pre>
+<p><strong>Observe.</strong> The route lookup should no longer contain <code>via 10.10.11.2</code> for
+this destination. The connection should fail; the router and network's
+<code>internal=true</code> setting have not changed.</p>
+<p><strong>Explain.</strong> A private boundary does not manufacture a route. The failure was
+introduced at the source endpoint before the packet could use the intended
+router interface.</p>
+<p><strong>Recovery.</strong> Recreate <code>app-a-test</code>. Its Chapter 06 startup command runs again
+and reinstalls the static routes:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 up -d --force-recreate app-a-test
+bash scripts/compose-stage.sh 09 exec app-a-test \
+  ip route get 10.10.21.10
+bash scripts/compose-stage.sh 09 exec -T app-a-test \
+  nc -vz -w 3 10.10.21.10 5432
+</code></pre>
+<p>The route lookup should again use <code>10.10.11.2</code>. The final connection should
+again reach <code>db-a-test</code> and normally report <code>Connection refused</code> because no
+database service exists yet.</p>
+<h3 id="checkpoint-definition-of-done">Checkpoint: Definition of Done</h3>
+<p>You are ready for Chapter 10 when all of these are true:</p>
+<ul>
+<li>the four app/database networks report <code>internal=true</code>;</li>
+<li>the public networks remain normal bridges;</li>
+<li><code>app-a-test</code> selects <code>10.10.11.2</code> for the <code>db_a</code> subnet;</li>
+<li>the app-to-database test reaches <code>db-a-test</code> but finds no listener;</li>
+<li>the external egress test fails before NAT is introduced;</li>
+<li><code>lab-router</code> still has private interfaces and <code>ip_forward = 1</code>;</li>
+<li>deleting the source route breaks the path and recreating <code>app-a-test</code> restores
+it.</li>
+</ul>
+<p>Mark the matching items in the progress checklist above as you complete them.</p>
+<h3 id="clean-up">Clean Up</h3>
+<p>Remove the cumulative resources before moving to the NAT stage:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 09 down
+</code></pre>
+<h3 id="conclusion-next-chapter">Conclusion / Next Chapter</h3>
+<p>The application and database bridges are now private at the Docker network
+boundary, while explicit routing through <code>lab-router</code> still works when the
+firewall permits it. Private does not mean disconnected; it means the normal
+external path is no longer supplied by Docker.</p>
+<p>Chapter 10 adds <code>nat-gateway</code> on <code>app_a</code>, <code>app_b</code>, and <code>nat_public</code>. App default
+routes will point to that gateway, which will use <code>MASQUERADE</code> to provide
+controlled private egress.</p>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>What disappears before chapter 10?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 09 exec app-a-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 09 exec app-a-test ip route">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>There is no useful direct path to an external address, while an explicit route through lab-router can still reach another lab subnet when policy allows it.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="The containers still share their private bridge. The setting removes ordinary external reachability through Docker’s gateway; it does not erase local communication."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>Does `internal: true` prevent two containers on the same private Docker network from communicating with each other?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes</button><button type="button" data-question-choice="1">No</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="09" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>Private means no default external attachment, not invisible or unreachable from every lab container.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/iptables-firewall/"><span>Chapter 08</span><strong>Stateful Firewalling</strong><p>Replace unrestricted forwarding with a default-deny policy and allow only the ports the application design requires.</p></a><a href="/labs/docker-networking/nat-gateway/"><span>Chapter 10</span><strong>NAT Gateway</strong><p>Separate routing from address translation and provide controlled egress for private application networks.</p></a><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/nat-gateway/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

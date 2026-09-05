@@ -1,0 +1,258 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Create six user-defined bridge networks with explicit /24 CIDRs and fixed container addresses. Give the lab real boundaries with six user-defined Docker…"><meta name="theme-color" content="#101515"><title>Docker Bridge Networks &amp; CIDR — Hands-on Networking Lab | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/cidr-bridges/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="Docker Bridge Networks &amp; CIDR — Hands-on Networking Lab | Ayo Olowoleru"><meta property="og:description" content="Create six user-defined bridge networks with explicit /24 CIDRs and fixed container addresses. Give the lab real boundaries with six user-defined Docker…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/cidr-bridges/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"CIDR and Bridge Networks","item":"https://ayo-olowoleru.xyz/labs/docker-networking/cidr-bridges/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Docker Bridge Networks & CIDR — Hands-on Networking Lab","description":"Create six user-defined bridge networks with explicit /24 CIDRs and fixed container addresses. Give the lab real boundaries with six user-defined Docker…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/cidr-bridges/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["Layer-2 bridge","CIDR /24","Docker IPAM","bridge gateway"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>FOUNDATION</span><span>Chapter 02</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/02-cidr-bridges/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 02 / FOUNDATION</span><h1>CIDR and Bridge Networks<br><em>Give the lab real boundaries with six user-defined Docker bridge networks and explicit /24 address ranges.</em></h1><p>Create six user-defined bridge networks with explicit /24 CIDRs and fixed container addresses.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>02<small>/ 17</small></strong><p>A bridge is a boundary until a device deliberately connects it.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>02 / 17</span></div><div class="chapter-rail-progress"><span style="width:11.8%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link is-current" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/02-cidr-bridges/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 02 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Attaches public-a-test to public_a and creates five more diagnostic containers plus five more bridge networks. No router exists yet.</p></div><div><span>Lab state</span><p>6 bridge networks / 6 diagnostic containers / no router</p><div class="chapter-tags"><span>Layer-2 bridge</span><span>CIDR /24</span><span>Docker IPAM</span><span>bridge gateway</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>A bridge is a boundary until a device deliberately connects it.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/02-cidr-bridges/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-02.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-02.svg" alt="CIDR and Bridge Networks topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Start all six boundaries</h3><p>Create the cumulative stage and confirm the six diagnostic services are running.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 02 up -d</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 02 up -d">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 02 ps</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 02 ps">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Inventory Docker networks</h3><p>Check that public, app, and database bridges exist as separate local networks.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>docker network ls</code></pre><button type="button" data-copy-command="docker network ls">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Inspect one interface and route</h3><p>Read the address and directly connected route inside the app tier.</p><div class="series-command"><div class="series-command-meta"><span>HOST → public-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 02 exec public-a-test ip addr</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 02 exec public-a-test ip addr">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 02 exec app-a-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 02 exec app-a-test ip route">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Try a cross-network request before a router exists. Record the failure without adding a route.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 02 exec app-a-test ping -c 2 10.10.12.10</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 02 exec app-a-test ping -c 2 10.10.12.10">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 02 down</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#key-concepts">Key Concepts</a><a href="#what-is-a-network">What Is a Network?</a><a href="#how-does-networking-work-in-docker">How Does Networking Work in Docker?</a><a href="#ipv4-and-cidr">IPv4 and CIDR</a><a href="#docker-bridge-networks">Docker Bridge Networks</a><a href="#docker-ipam">Docker IPAM</a><a href="#docker-bridge-gateway">Docker Bridge Gateway</a></nav><div class="lesson-notes" data-static-notes><h3 id="key-concepts">Key Concepts</h3>
+<h4 id="what-is-a-network">What Is a Network?</h4>
+<p>A network is a group of devices or interfaces that can communicate with one
+another using a defined addressing and forwarding scheme.</p>
+<p>In this lab, each Docker bridge network creates a separate Layer-2 network
+segment.</p>
+<h4 id="how-does-networking-work-in-docker">How Does Networking Work in Docker?</h4>
+<p>Docker can create virtual networks and attach container interfaces to them.</p>
+<p>For a user-defined bridge network, Docker creates:</p>
+<ul>
+<li>a Linux bridge on the host;</li>
+<li>a virtual Ethernet interface for each connected container;</li>
+<li>an IP address for each container interface;</li>
+<li>a gateway address for the bridge;</li>
+<li>Docker-managed DNS for containers on the network.</li>
+</ul>
+<p>Containers connected to the same bridge can communicate directly at Layer 2.</p>
+<p>Containers on different bridge networks cannot communicate directly unless
+routing is introduced and a routing path is created between those networks.</p>
+<h4 id="ipv4-and-cidr">IPv4 and CIDR</h4>
+<p>An IPv4 address contains <strong>32 bits</strong>, divided into four 8-bit octets.</p>
+<p>For example:</p>
+<pre><code class="language-text">10.10.11.10
+
+00001010 | 00001010 | 00001011 | 00001010
+   8 bits     8 bits     8 bits     8 bits
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-text">10 = 00001010
+11 = 00001011
+</code></pre>
+<p>CIDR notation tells us how many of the 32 bits belong to the network portion.</p>
+<div class="lesson-table-wrap"><table>
+<thead>
+<tr>
+<th>CIDR</th>
+<th style="text-align:right">Network Bits</th>
+<th style="text-align:right">Host Bits</th>
+<th style="text-align:right">Total Addresses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/24</code></td>
+<td style="text-align:right">24</td>
+<td style="text-align:right">8</td>
+<td style="text-align:right">256</td>
+</tr>
+<tr>
+<td><code>/16</code></td>
+<td style="text-align:right">16</td>
+<td style="text-align:right">16</td>
+<td style="text-align:right">65,536</td>
+</tr>
+<tr>
+<td><code>/8</code></td>
+<td style="text-align:right">8</td>
+<td style="text-align:right">24</td>
+<td style="text-align:right">16,777,216</td>
+</tr>
+</tbody>
+</table></div>
+<p>The general formula is:</p>
+<pre><code class="language-text">Host bits = 32 - CIDR prefix
+Total addresses = 2^(host bits)
+</code></pre>
+<p>For example:</p>
+<pre><code class="language-text">10.10.11.0/24
+
+First 24 bits = network portion
+Last 8 bits   = host portion
+</code></pre>
+<h4 id="docker-bridge-networks">Docker Bridge Networks</h4>
+<p>A <strong>user-defined bridge</strong> is a Docker-managed Layer-2 network segment.</p>
+<h4 id="docker-ipam">Docker IPAM</h4>
+<p><strong>IPAM</strong> means IP Address Management.</p>
+<p>Docker IPAM allocates and tracks IP addresses for containers attached to Docker
+networks.</p>
+<p>In this lab, we explicitly assign fixed IP addresses in Compose.</p>
+<p>This is not DHCP. Docker configures the container interface directly.</p>
+<h4 id="docker-bridge-gateway">Docker Bridge Gateway</h4>
+<p>Docker normally uses the <code>.1</code> address as the bridge gateway.</p>
+<p>For example:</p>
+<pre><code class="language-text">10.10.11.1 = Docker bridge gateway
+</code></pre>
+<p>Later in the lab, our own router will use:</p>
+<pre><code class="language-text">10.10.11.2 = lab-router
+</code></pre>
+<p>These are two different devices with different roles.</p>
+<hr/>
+<h3 id="goal">Goal</h3>
+<p>Create six user-defined bridge networks with explicit <code>/24</code> CIDRs and fixed
+container addresses.</p>
+<p>At the end of this chapter, you should be able to:</p>
+<ul>
+<li>explain what an IPv4 address is;</li>
+<li>explain what <code>/24</code> means;</li>
+<li>identify a container's network interface;</li>
+<li>inspect a container's routing table;</li>
+<li>explain why containers on different bridges cannot communicate directly.</li>
+</ul>
+<hr/>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>The original <code>public-a-test</code> service is attached to the <code>public_a</code> network.</p>
+<p>Five additional diagnostic containers and five additional bridge networks are
+also created.</p>
+<p>The six networks are:</p>
+<pre><code class="language-text">public_a   10.10.1.0/24
+public_b   10.10.2.0/24
+app_a      10.10.11.0/24
+app_b      10.10.12.0/24
+db_a       10.10.21.0/24
+db_b       10.10.22.0/24
+</code></pre>
+<p>No router exists yet.</p>
+<p>This means the six bridge networks are isolated from one another.</p>
+<hr/>
+<h3 id="tasks">Tasks</h3>
+<ol>
+<li>Start the lab.</li>
+<li>Confirm that all containers are running.</li>
+<li>Confirm that all six Docker networks exist.</li>
+<li>Inspect a container's network interfaces.</li>
+<li>Inspect a container's routing table.</li>
+<li>Test communication between two different bridge networks.</li>
+</ol>
+<hr/>
+<h3 id="checkpoint">Checkpoint</h3>
+<h4 id="1-start-the-lab">1. Start the Lab</h4>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 02 up -d
+</code></pre>
+<h4 id="2-confirm-the-containers-are-running">2. Confirm the Containers Are Running</h4>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 02 ps
+</code></pre>
+<p>You should see six running services.</p>
+<h4 id="3-confirm-the-docker-networks-exist">3. Confirm the Docker Networks Exist</h4>
+<pre><code class="language-bash">docker network ls
+</code></pre>
+<p>You should see networks similar to:</p>
+<pre><code class="language-text">NETWORK ID     NAME                     DRIVER    SCOPE
+xxxxxxxxxxxx   docker-subnet_app_a      bridge    local
+xxxxxxxxxxxx   docker-subnet_app_b      bridge    local
+xxxxxxxxxxxx   docker-subnet_db_a       bridge    local
+xxxxxxxxxxxx   docker-subnet_db_b       bridge    local
+xxxxxxxxxxxx   docker-subnet_public_a   bridge    local
+xxxxxxxxxxxx   docker-subnet_public_b   bridge    local
+</code></pre>
+<p>Other Docker networks may also appear on your machine.</p>
+<hr/>
+<h3 id="inspect-a-containers-network-interfaces">Inspect a Container's Network Interfaces</h3>
+<p>We will inspect <code>public-a-test</code>, which is attached to the <code>public_a</code> network.</p>
+<p>Run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 02 exec public-a-test ip addr
+</code></pre>
+<p>You should see output similar to:</p>
+<pre><code class="language-text">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 ...
+    inet 127.0.0.1/8 scope host lo
+
+2: eth0@if139: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 ...
+    inet 10.10.1.10/24 brd 10.10.1.255 scope global eth0
+</code></pre>
+<p>This container has two important interfaces:</p>
+<pre><code class="language-text">lo    = loopback interface
+eth0  = container network interface
+</code></pre>
+<p>The loopback address is:</p>
+<pre><code class="language-text">127.0.0.1
+</code></pre>
+<p>The container's network address is:</p>
+<pre><code class="language-text">10.10.1.10/24
+</code></pre>
+<h4 id="reading-the-interface-output">Reading the Interface Output</h4>
+<p>This line:</p>
+<pre><code class="language-text">inet 10.10.1.10/24 brd 10.10.1.255 scope global eth0
+</code></pre>
+<p>means:</p>
+<pre><code class="language-text">10.10.1.10   = container IP address
+/24          = subnet prefix
+10.10.1.255  = broadcast address
+eth0         = network interface
+</code></pre>
+<p>A <code>/24</code> provides <strong>256 total IPv4 addresses</strong> in the subnet.</p>
+<p>It does not mean all 256 addresses are available for containers.</p>
+<hr/>
+<h3 id="inspect-the-routing-table">Inspect the Routing Table</h3>
+<p>Now inspect the routing table inside <code>app-a-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 02 exec app-a-test ip route
+</code></pre>
+<p>Expected output:</p>
+<pre><code class="language-text">10.10.11.0/24 dev eth0 scope link src 10.10.11.10
+</code></pre>
+<p>Breakdown:</p>
+<pre><code class="language-text">10.10.11.0/24
+= destination network
+
+dev eth0
+= use the eth0 interface
+
+scope link
+= the destination network is directly connected
+
+src 10.10.11.10
+= use 10.10.11.10 as the source IP address
+</code></pre>
+<p>The important observation is that there is no route to:</p>
+<pre><code class="language-text">10.10.12.0/24
+</code></pre>
+<p>At this stage, there is also no router connecting <code>app_a</code> and <code>app_b</code>.</p>
+<hr/>
+<h3 id="expected-observation">Expected Observation</h3>
+<p><code>app-a-test</code> uses:</p>
+<pre><code class="language-text">10.10.11.10/24
+</code></pre>
+<p>while <code>app-b-test</code> uses:</p>
+<pre><code class="language-text">10.10.12.10/24
+</code></pre>
+<p>These addresses belong to different Layer-2 networks.</p>
+<p>The current topology is:</p>
+<pre><code class="language-text">app_a                           app_b
+
+10.10.11.10                    10.10.12.10
+app-a-test                     app-b-test
+     |                              |
+     v                              v
+Docker bridge                  Docker bridge
+
+            no router
+               X
+</code></pre>
+<p>A packet between these networks needs a Layer-3 routing device.</p>
+<p>At this stage, no such device exists.</p>
+<hr/>
+<h3 id="break-it">Break It</h3>
+<p>Try to ping <code>app-b-test</code> from <code>app-a-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 02 exec app-a-test ping -c 2 10.10.12.10
+</code></pre>
+<p>The failure is expected.</p>
+<p>The packet cannot reach <code>10.10.12.10</code> because:</p>
+<pre><code class="language-text">
+2 packets transmitted, 0 packets received, 100% packet loss
+</code></pre>
+<p>packets are being dropped because it cannot reach the other container on the second network</p>
+<pre><code class="language-text">app-a-test
+10.10.11.10
+    |
+    v
+routing table
+    |
+    X no route to 10.10.12.0/24
+</code></pre>
+<p>This failure demonstrates network isolation.</p>
+<p>It does not mean either container is unhealthy.</p>
+<hr/>
+<h3 id="clean-up">Clean Up</h3>
+<p>Remove the resources created for this stage:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 02 down
+</code></pre>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>Why can containers on different bridges not communicate directly?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 02 exec app-a-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 02 exec app-a-test ip route">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>Each container has only its local connected network. There is no router connecting app_a to app_b or any other bridge yet.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="Each bridge is its own Layer-2 boundary. The endpoints only know their connected network, and no Layer-3 device connects the two bridges yet."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>After creating app_a and app_b as separate Docker bridges, can app-a-test reach app-b-test without adding a router?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes</button><button type="button" data-question-choice="1">No</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="02" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>A bridge is a boundary until a device deliberately connects it.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a><a href="/labs/docker-networking/network-namespaces/"><span>Chapter 03</span><strong>Network Namespaces and Interfaces</strong><p>Look inside the Linux networking view Docker created for one container before introducing routing.</p></a><a href="/labs/docker-networking/capabilities/"><span>Chapter 04</span><strong>Linux Capabilities</strong><p>Permission is part of the network. Root inside a container still needs the specific capability to change routes.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/network-namespaces/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

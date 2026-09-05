@@ -1,0 +1,259 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Make routes and replica bootstrap repeatable with ip route replace, a named volume, PG_VERSION, and exec. Move manual routes and replica bootstrap into…"><meta name="theme-color" content="#101515"><title>Persistent Docker Runtime Configuration — Routes, Entrypoints &amp; Volumes | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/runtime-persistence/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="Persistent Docker Runtime Configuration — Routes, Entrypoints &amp; Volumes | Ayo Olowoleru"><meta property="og:description" content="Make routes and replica bootstrap repeatable with ip route replace, a named volume, PG_VERSION, and exec. Move manual routes and replica bootstrap into…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/runtime-persistence/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"Runtime Configuration Persistence","item":"https://ayo-olowoleru.xyz/labs/docker-networking/runtime-persistence/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Persistent Docker Runtime Configuration — Routes, Entrypoints & Volumes","description":"Make routes and replica bootstrap repeatable with ip route replace, a named volume, PG_VERSION, and exec. Move manual routes and replica bootstrap into…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/runtime-persistence/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["idempotent setup","ip route replace","named volume","exec and PID 1"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>RECOVERY</span><span>Chapter 16</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/16-runtime-persistence/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 16 / RECOVERY</span><h1>Runtime Configuration Persistence<br><em>Move manual routes and replica bootstrap into idempotent entrypoints so recreation converges on the same runtime state.</em></h1><p>Make routes and replica bootstrap repeatable with ip route replace, a named volume, PG_VERSION, and exec.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>16<small>/ 17</small></strong><p>Persistent behavior belongs in the image, entrypoint, Compose file, or volume.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>16 / 17</span></div><div class="chapter-rail-progress"><span style="width:94.1%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link is-current" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/16-runtime-persistence/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 16 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>The replica entrypoint waits for the primary, runs pg_basebackup only for an empty volume, writes a password file, and delegates to the official PostgreSQL entrypoint.</p></div><div><span>Lab state</span><p>Named PostgreSQL volume / idempotent entrypoints / routes reapplied on recreation</p><div class="chapter-tags"><span>idempotent setup</span><span>ip route replace</span><span>named volume</span><span>exec and PID 1</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>Persistent behavior belongs in the image, entrypoint, Compose file, or volume.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/16-runtime-persistence/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-16.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-16.svg" alt="Runtime Configuration Persistence topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Start the persistent stage</h3><p>Build and wait for the complete stack.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 16 up -d --build --wait</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 16 up -d --build --wait">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Verify standby state</h3><p>Check the replica and primary from inside their containers.</p><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-replica</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 16 exec postgres-replica psql -U labadmin -d labdb -c &#x27;SELECT pg_is_in_recovery();&#x27;</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 16 exec postgres-replica psql -U labadmin -d labdb -c &#x27;SELECT pg_is_in_recovery();&#x27;">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-primary</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 16 exec postgres-primary psql -U labadmin -d labdb -c &#x27;SELECT client_addr, state FROM pg_stat_replication;&#x27;</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 16 exec postgres-primary psql -U labadmin -d labdb -c &#x27;SELECT client_addr, state FROM pg_stat_replication;&#x27;">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Recreate and compare</h3><p>Restart the replica and inspect logs for readiness, standby mode, and WAL streaming.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 16 up -d --force-recreate postgres-replica</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 16 up -d --force-recreate postgres-replica">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 16 logs postgres-replica</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 16 logs postgres-replica">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Compare a route added manually in a disposable diagnostic container with a route restored by the entrypoint.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-replica</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 16 exec postgres-replica ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 16 exec postgres-replica ip route">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 16 down -v</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#concepts">Concepts</a><a href="#goal">Goal</a><a href="#progression-from-chapter-15">Progression From Chapter 15</a><a href="#what-this-stage-adds">What This Stage Adds</a><a href="#progress-checklist">Progress Checklist</a><a href="#tasks">Tasks</a><a href="#1-start-the-automated-replica">1. Start the Automated Replica</a></nav><div class="lesson-notes" data-static-notes><h3 id="concepts">Concepts</h3>
+<ul>
+<li><strong>Runtime state</strong> such as an <code>ip route</code> entry belongs to a container's
+network namespace. Recreating the container removes that state.</li>
+<li>A Docker <strong>named volume</strong> persists PostgreSQL cluster files independently of
+the container. This lets the replica keep its physical cluster across a
+restart or recreation.</li>
+<li><strong>Idempotent setup</strong> can run repeatedly and converge on the same desired
+state. The entrypoint uses <code>ip route replace</code> rather than a fragile
+<code>ip route add</code>.</li>
+<li><strong><code>PG_VERSION</code></strong> is the bootstrap sentinel in this lab. A non-empty sentinel
+means the replica volume already contains a cluster, so another
+<code>pg_basebackup</code> must not run.</li>
+<li><strong><code>exec</code></strong> replaces the wrapper with the official PostgreSQL entrypoint so
+the real server receives signals and its exit status becomes the container
+exit status.</li>
+</ul>
+<h3 id="goal">Goal</h3>
+<p>Move the manual route and replica bootstrap from chapter 15 into an entrypoint,
+then prove that container recreation reapplies routes without copying the
+database again.</p>
+<h3 id="progression-from-chapter-15">Progression From Chapter 15</h3>
+<p>Chapter 15 created the standby by hand:</p>
+<pre><code class="language-text">enter replica -&gt; clear directory -&gt; pg_basebackup -&gt; write .pgpass
+             -&gt; start postgres manually
+</code></pre>
+<p>That flow proves the replication concepts, but it is not a repeatable service
+startup procedure. Chapter 16 makes the container perform the same work:</p>
+<pre><code class="language-text">container starts
+        |
+        +-- replace routes
+        +-- if postgres and PG_VERSION is absent:
+        |      wait for primary -&gt; pg_basebackup -&gt; write .pgpass
+        +-- exec official PostgreSQL entrypoint
+</code></pre>
+<p>The named <code>postgres_replica_data</code> volume introduced with the chapter 15
+service is now useful: the cluster survives container recreation while the
+entrypoint reapplies ephemeral network state.</p>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>The chapter 16 Compose overlay changes the replica image and command. It sets:</p>
+<pre><code class="language-text">LAB_REPLICA_BOOTSTRAP=true
+PRIMARY_HOST=10.10.21.20
+REPLICA_PASSWORD=replica_password
+</code></pre>
+<p>The replica command is PostgreSQL with the lab HBA file:</p>
+<pre><code class="language-text">postgres -c hba_file=/etc/postgresql/replica-pg_hba.conf
+</code></pre>
+<p>The entrypoint in
+<code>chapters/16-runtime-persistence/postgres-replica/lab-entrypoint.sh</code> then:</p>
+<ol>
+<li>installs the three replica routes with <code>ip route replace</code>;</li>
+<li>checks that the requested command is <code>postgres</code>;</li>
+<li>checks <code>LAB_REPLICA_BOOTSTRAP</code> and that <code>PG_VERSION</code> is absent or empty;</li>
+<li>waits for the primary and runs <code>pg_basebackup -R</code> once;</li>
+<li>writes <code>/var/lib/postgresql/.pgpass</code> with mode <code>600</code>; and</li>
+<li>runs <code>exec /usr/local/bin/docker-entrypoint.sh "$@"</code>.</li>
+</ol>
+<h3 id="progress-checklist">Progress Checklist</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Start chapter 16 with <code>--wait</code> and observe the health checks.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Verify the replica routes and recovery state.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Verify WAL streaming and a replicated insert.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Recreate only <code>postgres-replica</code> and confirm its data remains.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Confirm routes are reapplied and no second base backup is needed.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Complete the route deletion break exercise and recover by recreation.</li>
+</ul>
+<h3 id="tasks">Tasks</h3>
+<h4 id="1-start-the-automated-replica">1. Start the Automated Replica</h4>
+<p><strong>Predict:</strong> On an empty volume, what should happen before PostgreSQL becomes
+healthy? On a populated volume, should <code>pg_basebackup</code> run again?</p>
+<p><strong>Run:</strong> From the repository root:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 up -d --build --wait
+bash scripts/compose-stage.sh 16 ps
+</code></pre>
+<p>Inspect the resolved cumulative configuration if you want to see the overlay:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 config
+</code></pre>
+<p><strong>Observe:</strong> <code>postgres-primary</code> becomes healthy first. The replica then waits
+for the primary, bootstraps if its volume is empty, starts PostgreSQL, and
+becomes healthy. <code>ps</code> shows the normal <code>postgres</code> command rather than
+<code>sleep infinity</code> for the replica.</p>
+<p><strong>Explain:</strong> <code>depends_on</code> controls the initial Compose ordering, while the
+entrypoint's <code>until pg_isready ...</code> loop protects the base backup from a
+primary that is still starting. The health check is evidence that the final
+server is accepting connections.</p>
+<h4 id="2-inspect-routes-and-recovery-state">2. Inspect Routes and Recovery State</h4>
+<p><strong>Predict:</strong> Which next hop should the replica use for the primary at
+<code>10.10.21.20</code>? Will the replica report recovery mode?</p>
+<p><strong>Run:</strong></p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 exec -T postgres-replica ip route
+
+bash scripts/compose-stage.sh 16 exec -T postgres-replica \
+  ip route get 10.10.21.20
+
+bash scripts/compose-stage.sh 16 exec -T postgres-replica \
+  psql -U labadmin -d labdb -c 'SELECT pg_is_in_recovery();'
+
+bash scripts/compose-stage.sh 16 exec -T postgres-primary \
+  psql -U labadmin -d labdb -c \
+  'SELECT client_addr, state FROM pg_stat_replication;'
+</code></pre>
+<p><strong>Observe:</strong> The route lookup selects <code>10.10.22.2</code> as the next hop. The
+replica returns <code>t</code>, and the primary reports <code>10.10.22.20</code> with state
+<code>streaming</code>.</p>
+<p><strong>Explain:</strong> The route is runtime kernel state, so the entrypoint reapplies it
+on every container start. The data files and <code>standby.signal</code> are on the named
+volume, so the replica can start in recovery without a new base backup.</p>
+<h4 id="3-prove-wal-replay">3. Prove WAL Replay</h4>
+<p><strong>Predict:</strong> If the primary gets a new row, should the application write to
+the replica or should WAL replay make the row visible there?</p>
+<p><strong>Run:</strong> Use the primary for the write and poll the replica briefly:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 exec -T postgres-primary \
+  psql -U labadmin -d labdb -c \
+  "INSERT INTO users (name) VALUES ('runtime-persistence-test');"
+
+sleep 2
+
+bash scripts/compose-stage.sh 16 exec -T postgres-replica \
+  psql -U labadmin -d labdb -c \
+  "SELECT name FROM users WHERE name = 'runtime-persistence-test';"
+</code></pre>
+<p><strong>Observe:</strong> The row appears on the replica. A short delay is normal because
+the primary commits first and the standby replays WAL asynchronously.</p>
+<p><strong>Explain:</strong> The entrypoint did not copy an SQL export. It preserved the
+physical cluster and kept the <code>primary_conninfo</code> and <code>standby.signal</code> created
+by <code>pg_basebackup -R</code>.</p>
+<h4 id="4-inspect-the-persistence-boundary">4. Inspect the Persistence Boundary</h4>
+<p><strong>Predict:</strong> Which of these should survive recreation: a route in the network
+namespace, or <code>PG_VERSION</code> in the named volume?</p>
+<p><strong>Run:</strong> Record both kinds of state:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 exec -T postgres-replica sh -c \
+  'cat /var/lib/postgresql/data/PG_VERSION; test -s /var/lib/postgresql/data/standby.signal; ip route get 10.10.21.20'
+</code></pre>
+<p>Recreate only the replica. Do not remove volumes:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 up -d --force-recreate --wait postgres-replica
+</code></pre>
+<p>Inspect the same state again:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 exec -T postgres-replica sh -c \
+  'cat /var/lib/postgresql/data/PG_VERSION; test -s /var/lib/postgresql/data/standby.signal; ip route get 10.10.21.20'
+
+bash scripts/compose-stage.sh 16 exec -T postgres-replica \
+  psql -U labadmin -d labdb -c 'SELECT pg_is_in_recovery();'
+</code></pre>
+<p><strong>Observe:</strong> <code>PG_VERSION</code> and <code>standby.signal</code> remain, and the route again uses
+<code>10.10.22.2</code>. The replica starts in recovery without a manual base backup.</p>
+<p><strong>Explain:</strong> Recreation creates a new network namespace, so the old route is
+gone. The named volume is mounted into the new container, so the physical
+cluster remains. The entrypoint's route setup and <code>PG_VERSION</code> guard handle
+the two kinds of state separately.</p>
+<h4 id="5-demonstrate-idempotent-route-setup">5. Demonstrate Idempotent Route Setup</h4>
+<p><strong>Predict:</strong> What should happen if the same <code>ip route replace</code> command runs
+again? Should it create duplicate equivalent routes?</p>
+<p><strong>Run:</strong> Repeat one of the exact entrypoint route commands:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 exec -T postgres-replica \
+  ip route replace 10.10.21.0/24 via 10.10.22.2
+
+bash scripts/compose-stage.sh 16 exec -T postgres-replica ip route
+</code></pre>
+<p><strong>Observe:</strong> The route remains present once with the same next hop. The
+container continues serving PostgreSQL.</p>
+<p><strong>Explain:</strong> <code>replace</code> converges on the desired route whether it was missing or
+already present. This is why it is safe in an entrypoint that runs every time
+the container starts. It does not make the route persistent by itself; the
+entrypoint re-executes the command after recreation.</p>
+<h4 id="6-observe-the-exec-boundary">6. Observe the <code>exec</code> Boundary</h4>
+<p><strong>Predict:</strong> After startup, should PostgreSQL be hidden behind a long-running
+shell, or should the real server be the container's main process?</p>
+<p><strong>Run:</strong> Inspect the process tree:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 exec -T postgres-replica ps -ef
+</code></pre>
+<p><strong>Observe:</strong> The final PostgreSQL server is present as the main service
+process, rather than a manually started child under <code>sleep infinity</code>.</p>
+<p><strong>Explain:</strong> The wrapper performs setup and then uses <code>exec</code>. Signal delivery,
+shutdown, and the process exit status therefore follow the official
+PostgreSQL entrypoint and server.</p>
+<h3 id="expected-observations">Expected Observations</h3>
+<p>On a clean volume, the first startup looks conceptually like this:</p>
+<pre><code class="language-text">empty postgres_replica_data
+        |
+        v
+route replace -&gt; wait for primary -&gt; pg_basebackup -R
+        |
+        v
+PG_VERSION + standby.signal + .pgpass
+        |
+        v
+official PostgreSQL entrypoint -&gt; postgres in recovery
+</code></pre>
+<p>On recreation, it looks like this:</p>
+<pre><code class="language-text">existing postgres_replica_data
+        |
+        v
+route replace -&gt; PG_VERSION exists -&gt; skip pg_basebackup
+        |
+        v
+exec postgres -&gt; resume WAL streaming
+</code></pre>
+<p>The database files persist. The route does not persist, but is restored before
+the server starts.</p>
+<h3 id="checkpoint-definition-of-done">Checkpoint: Definition of Done</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/><code>bash scripts/compose-stage.sh 16 up -d --build --wait</code> completes.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>The replica reports <code>pg_is_in_recovery() = t</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>The primary reports the replica as <code>streaming</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>A primary insert appears on the replica.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>The replica route to <code>10.10.21.20</code> uses <code>10.10.22.2</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Recreating only <code>postgres-replica</code> preserves <code>PG_VERSION</code> and recovery
+state.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>You can distinguish a persistent volume from ephemeral namespace state.</li>
+</ul>
+<h3 id="break-it-delete-one-runtime-route">Break It: Delete One Runtime Route</h3>
+<p>This is one controlled failure. It changes only a route in the live replica
+namespace. It does not delete data and it does not edit a Compose file.</p>
+<p><strong>Predict:</strong> If the replica loses its route to <code>db_a</code>, will its local
+PostgreSQL process immediately stop existing? Will a new WAL connection be able
+to reach the primary?</p>
+<p><strong>Run:</strong> Delete only the route used to reach the primary:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 exec -T postgres-replica \
+  ip route delete 10.10.21.0/24 via 10.10.22.2
+
+bash scripts/compose-stage.sh 16 exec -T postgres-replica \
+  ip route get 10.10.21.20
+</code></pre>
+<p><strong>Observe:</strong> The route lookup falls back to another route, fails, or no longer
+selects <code>10.10.22.2</code>. A local <code>psql</code> query may still work because the server
+process and its local socket are separate from the missing network route.</p>
+<p><strong>Explain:</strong> A healthy process does not prove that its network dependency is
+healthy. The existing replication TCP session may remain briefly, but the
+replica cannot reliably reconnect to the primary without the route.</p>
+<p><strong>Recover:</strong> Recreate only the replica. The named volume is preserved and the
+entrypoint reapplies the route:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 up -d --force-recreate --wait postgres-replica
+
+bash scripts/compose-stage.sh 16 exec -T postgres-replica \
+  ip route get 10.10.21.20
+
+bash scripts/compose-stage.sh 16 exec -T postgres-primary \
+  psql -U labadmin -d labdb -c \
+  'SELECT client_addr, state FROM pg_stat_replication;'
+</code></pre>
+<p>The route should again use <code>10.10.22.2</code>, and the primary should return
+<code>streaming</code> after the replica reconnects.</p>
+<h3 id="clean-up">Clean Up</h3>
+<p>Remove the chapter containers and networks while preserving both database
+volumes:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 16 down
+</code></pre>
+<p>Do not use <code>down -v</code> as routine cleanup. It erases the evidence for the
+volume-persistence lesson. A full reset is intentionally reserved for when the
+replica or primary must be bootstrapped from empty data directories.</p>
+<h3 id="conclusion-and-next-chapter">Conclusion and Next Chapter</h3>
+<p>Chapter 16 turned manual work into repeatable startup behavior. Routes are
+reapplied, the named volume preserves the physical cluster, the <code>PG_VERSION</code>
+guard prevents an unsafe second base backup, and <code>exec</code> leaves PostgreSQL with
+the correct process boundary.</p>
+<p>Chapter 17 is the capstone. It runs the repository's routing, firewall, NAT,
+and replication checks together, then uses one controlled route failure to
+practice finding the first broken layer and recovering it.</p>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>Which state survives recreation?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 16 logs postgres-replica</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 16 logs postgres-replica">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>A clean volume performs one base backup. A restart keeps the cluster and reapplies routes without copying the database again.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="The network namespace is recreated with the container. Runtime routes must be expressed in startup logic or another persistent configuration mechanism."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>Will an `ip route add` performed manually inside a running container survive that container being recreated?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes</button><button type="button" data-question-choice="1">No</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="16" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>Persistent behavior belongs in the image, entrypoint, Compose file, or volume.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/physical-replication/"><span>Chapter 15</span><strong>Physical Streaming Replication</strong><p>Copy the primary cluster into a second database subnet, then observe WAL stream and replay on a read-only standby.</p></a><a href="/labs/docker-networking/failure-testing/"><span>Chapter 17</span><strong>Failure Testing and Cloud Mapping</strong><p>Turn the whole lab into a repeatable test surface and learn to locate the first layer where behavior changes.</p></a><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/failure-testing/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

@@ -1,0 +1,278 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Allow required application flows while explaining FORWARD, conntrack, rule order, and the difference between DROP and refusal. Replace unrestricted…"><meta name="theme-color" content="#101515"><title>Docker iptables FORWARD &amp; Conntrack — Stateful Firewall Lab | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/iptables-firewall/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="Docker iptables FORWARD &amp; Conntrack — Stateful Firewall Lab | Ayo Olowoleru"><meta property="og:description" content="Allow required application flows while explaining FORWARD, conntrack, rule order, and the difference between DROP and refusal. Replace unrestricted…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/iptables-firewall/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"Stateful Firewalling","item":"https://ayo-olowoleru.xyz/labs/docker-networking/iptables-firewall/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Docker iptables FORWARD & Conntrack — Stateful Firewall Lab","description":"Allow required application flows while explaining FORWARD, conntrack, rule order, and the difference between DROP and refusal. Replace unrestricted…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/iptables-firewall/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["FORWARD chain","conntrack","DROP policy","port segmentation"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>ROUTING FABRIC</span><span>Chapter 08</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/08-iptables-firewall/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 08 / ROUTING FABRIC</span><h1>Stateful Firewalling<br><em>Replace unrestricted forwarding with a default-deny policy and allow only the ports the application design requires.</em></h1><p>Allow required application flows while explaining FORWARD, conntrack, rule order, and the difference between DROP and refusal.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>08<small>/ 17</small></strong><p>The route chooses the path; the firewall chooses whether the flow may use it.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>08 / 17</span></div><div class="chapter-rail-progress"><span style="width:47.1%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link is-current" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/08-iptables-firewall/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 08 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Allows established return traffic, public-to-app TCP 8000, app-to-database TCP 5432, and database replication TCP 5432.</p></div><div><span>Lab state</span><p>Router FORWARD policy is default-deny / allowed flows are explicit and stateful</p><div class="chapter-tags"><span>FORWARD chain</span><span>conntrack</span><span>DROP policy</span><span>port segmentation</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>The route chooses the path; the firewall chooses whether the flow may use it.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/08-iptables-firewall/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-08.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-08.svg" alt="Stateful Firewalling topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Start the firewall stage</h3><p>Bring up the router with its forwarding policy applied by the entrypoint.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 08 up -d --build</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 08 up -d --build">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Read rules and counters</h3><p>Inspect the rule order before generating traffic.</p><div class="series-command"><div class="series-command-meta"><span>HOST → lab-router</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 08 exec lab-router iptables -L FORWARD -n -v --line-numbers</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 08 exec lab-router iptables -L FORWARD -n -v --line-numbers">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → lab-router</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 08 exec lab-router iptables -S FORWARD</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 08 exec lab-router iptables -S FORWARD">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Compare permitted and dropped flows</h3><p>A timeout indicates a drop; a refusal means a host was reached but no service listened.</p><div class="series-command"><div class="series-command-meta"><span>HOST → lab-router</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 08 exec lab-router iptables -L FORWARD -n -v --line-numbers</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 08 exec lab-router iptables -L FORWARD -n -v --line-numbers">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Flush FORWARD and compare a timeout caused by DROP with a refusal caused by a reachable host without a listener.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → lab-router</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 08 exec lab-router iptables -F FORWARD</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 08 exec lab-router iptables -F FORWARD">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 08 up -d --force-recreate lab-router</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#key-concepts">Key Concepts</a><a href="#the-forward-chain">The FORWARD Chain</a><a href="#default-deny">Default Deny</a><a href="#conntrack-and-stateful-return-traffic">Conntrack and Stateful Return Traffic</a><a href="#firewalling-is-not-database-authentication">Firewalling Is Not Database Authentication</a><a href="#goal">Goal</a><a href="#progression-from-chapter-07">Progression From Chapter 07</a></nav><div class="lesson-notes" data-static-notes><h3 id="key-concepts">Key Concepts</h3>
+<h4 id="the-forward-chain">The <code>FORWARD</code> Chain</h4>
+<p>Chapter 07 showed packets crossing <code>lab-router</code>. This chapter puts a policy
+decision in that path. The router's <code>FORWARD</code> chain evaluates packets that are
+being routed between interfaces:</p>
+<pre><code class="language-text">public_a -&gt; lab-router -&gt; app_a
+                         ^
+                    FORWARD chain
+</code></pre>
+<p>This is different from <code>INPUT</code>, which evaluates traffic addressed to the
+router itself. A ping to a router interface is not the same test as traffic
+that the router forwards to another container.</p>
+<h4 id="default-deny">Default Deny</h4>
+<p>The router sets:</p>
+<pre><code class="language-text">FORWARD policy = DROP
+</code></pre>
+<p>The rules then explicitly allow the flows required by the application design.
+When no rule matches, the policy drops the packet. Rule order matters because
+iptables evaluates rules from top to bottom.</p>
+<h4 id="conntrack-and-stateful-return-traffic">Conntrack and Stateful Return Traffic</h4>
+<p>Linux connection tracking records flow state. The first packet of a TCP
+connection is <code>NEW</code>. Reply packets are normally <code>ESTABLISHED</code>.</p>
+<p>The first rule in this lab is:</p>
+<pre><code class="language-text">-m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+</code></pre>
+<p>This lets reply packets return without writing a separate reverse-direction
+rule for every allowed connection. It does not allow a new connection in the
+opposite direction.</p>
+<h4 id="firewalling-is-not-database-authentication">Firewalling Is Not Database Authentication</h4>
+<p>iptables decides whether a packet may cross the router. PostgreSQL's
+<code>pg_hba.conf</code> decides whether a database session is accepted after a packet
+reaches PostgreSQL. They are separate controls.</p>
+<p>At this stage the later HTTP and PostgreSQL services do not exist yet. A
+connection to an allowed port can therefore end with <code>Connection refused</code>
+because the route and firewall allowed it but no process is listening.</p>
+<h3 id="goal">Goal</h3>
+<p>Replace unrestricted inter-subnet forwarding with a default-deny policy on
+<code>lab-router</code>. By the end, you should be able to:</p>
+<ul>
+<li>inspect the <code>FORWARD</code> policy and rule order;</li>
+<li>distinguish forwarded traffic from traffic addressed to the router;</li>
+<li>identify the permitted source, destination, protocol, and port combinations;</li>
+<li>explain why <code>ESTABLISHED,RELATED</code> covers return packets;</li>
+<li>distinguish a firewall timeout from a reachable host with no listener;</li>
+<li>restore the firewall after a deliberate rule-flush experiment.</li>
+</ul>
+<h3 id="progression-from-chapter-07">Progression From Chapter 07</h3>
+<p>Chapter 07 observed a working path from <code>public-a-test</code> to <code>app-b-test</code>:</p>
+<pre><code class="language-text">public-a-test -&gt; lab-router -&gt; app-b-test
+</code></pre>
+<p>Chapter 08 keeps the same six networks, routes, and multi-homed router. It
+replaces the router image with <code>docker-networking-vpc-lab/lab-router:firewall</code>
+and runs <code>chapters/08-iptables-firewall/router/entrypoint.sh</code> before the router
+command.</p>
+<p>The progression is:</p>
+<pre><code class="language-text">Chapter 07: packets can cross the router
+        |
+        v
+Chapter 08: only policy-approved forwarded packets can cross
+</code></pre>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>No endpoint or network is added. The <code>lab-router</code> service is rebuilt with
+<code>iproute2</code>, <code>iptables</code>, and <code>tcpdump</code>, then its entrypoint:</p>
+<ol>
+<li>enables <code>net.ipv4.ip_forward</code>;</li>
+<li>flushes old filter and NAT rules;</li>
+<li>sets <code>FORWARD</code> to <code>DROP</code>;</li>
+<li>accepts <code>ESTABLISHED,RELATED</code> traffic;</li>
+<li>accepts the new flows below.</li>
+</ol>
+<p>The explicit new-flow rules are:</p>
+<pre><code class="language-text">public_a 10.10.1.0/24  -&gt; app_a 10.10.11.0/24  TCP 8000
+public_b 10.10.2.0/24  -&gt; app_b 10.10.12.0/24  TCP 8000
+app_a    10.10.11.0/24 -&gt; db_a  10.10.21.0/24  TCP 5432
+app_b    10.10.12.0/24 -&gt; db_a  10.10.21.0/24  TCP 5432
+db_b     10.10.22.0/24 -&gt; db_a  10.10.21.0/24  TCP 5432
+</code></pre>
+<p>ICMP is not an allow rule in this stage. The Chapter 06 static routes still
+exist, but a route does not override a firewall policy.</p>
+<h3 id="progress-checklist">Progress Checklist</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Start the cumulative Chapter 08 lab.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Confirm that <code>FORWARD</code> has a default policy of <code>DROP</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Identify the <code>ESTABLISHED,RELATED</code> rule and five new-flow rules.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Show an allowed TCP path and a blocked TCP path.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Explain <code>Connection refused</code> versus a timeout.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>Flush the rules once and recover by recreating <code>lab-router</code>.</li>
+</ul>
+<h3 id="before-you-begin-terminal-roles">Before You Begin: Terminal Roles</h3>
+<p>Run commands from the repository root. Use two terminals when a request and a
+router observation are needed:</p>
+<ul>
+<li><strong>Terminal A</strong> runs inspection commands on <code>lab-router</code>.</li>
+<li><strong>Terminal B</strong> generates TCP traffic from an endpoint.</li>
+</ul>
+<p>The stage has seven services. It does not yet include <code>nginx-a</code>, <code>nginx-b</code>,
+<code>postgres-primary</code>, or <code>postgres-replica</code>; those arrive in later chapters.</p>
+<h3 id="tasks">Tasks</h3>
+<h4 id="task-1-start-the-firewall-stage">Task 1: Start the Firewall Stage</h4>
+<p><strong>Predict.</strong> The topology should still contain the six endpoint containers and
+<code>lab-router</code>. Only the router image and startup behavior should change.</p>
+<p><strong>Run.</strong> From the repository root:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 up -d --build
+bash scripts/compose-stage.sh 08 ps
+</code></pre>
+<p><strong>Observe.</strong> Confirm that these services are running:</p>
+<pre><code class="language-text">public-a-test
+public-b-test
+app-a-test
+app-b-test
+db-a-test
+db-b-test
+lab-router
+</code></pre>
+<p><strong>Explain.</strong> The firewall is placed on the existing forwarding node. No client
+route needs to change for the policy to take effect.</p>
+<h4 id="task-2-inspect-the-policy-and-rule-order">Task 2: Inspect the Policy and Rule Order</h4>
+<p><strong>Predict.</strong> The first rule should accept established return traffic, the next
+rules should allow only the five listed new-flow patterns, and unmatched
+forwarded packets should be dropped.</p>
+<p><strong>Run.</strong> In Terminal A:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec lab-router \
+  iptables -L FORWARD -n -v --line-numbers
+bash scripts/compose-stage.sh 08 exec lab-router \
+  iptables -S FORWARD
+</code></pre>
+<p><strong>Observe.</strong> The <code>iptables -S FORWARD</code> output should include:</p>
+<pre><code class="language-text">-P FORWARD DROP
+-A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+</code></pre>
+<p>It should also include the exact source/destination subnets and ports from the
+allow list. In the <code>-L</code> output, watch the packet and byte counters; they start
+at zero or increase as the lab is used.</p>
+<p><strong>Explain.</strong> A static route selects a next hop. The <code>FORWARD</code> chain then decides
+whether the packet may cross the router. Both decisions must permit the flow.</p>
+<h4 id="task-3-prove-that-icmp-is-now-blocked">Task 3: Prove That ICMP Is Now Blocked</h4>
+<p><strong>Predict.</strong> The Chapter 07 ping crosses the router, but ICMP is not one of
+the explicit allow rules. Predict that it will time out.</p>
+<p><strong>Run.</strong> In Terminal B:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec app-a-test \
+  ping -c 2 10.10.12.10
+</code></pre>
+<p><strong>Observe.</strong> Expect <code>100% packet loss</code> or an equivalent timeout. Inspect the
+router counters again:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec lab-router \
+  iptables -L FORWARD -n -v --line-numbers
+</code></pre>
+<p>The default policy or its counter accounts for the unmatched ICMP packets.</p>
+<p><strong>Explain.</strong> This is a policy change, not a routing failure. The endpoint still
+has the Chapter 06 route via <code>10.10.11.2</code>; the firewall refuses the forwarded
+protocol after routing selects the path.</p>
+<h4 id="task-4-compare-an-allowed-port-with-a-blocked-port">Task 4: Compare an Allowed Port With a Blocked Port</h4>
+<p><strong>Predict.</strong> A new TCP connection from <code>public-a-test</code> to <code>app-a-test</code> on port
+<code>8000</code> matches an allow rule. The same source to <code>app-b-test</code> on port <code>8000</code>
+does not match and should time out.</p>
+<p>At Chapter 08, neither app endpoint has a server listening on port <code>8000</code>, so
+first expect a refusal for the allowed path. To make the allowed path visibly
+successful, start a temporary HTTP listener in <code>app-a-test</code>.</p>
+<p><strong>Run.</strong> In Terminal A, start the temporary listener:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec -T app-a-test \
+  sh -c 'python3 -m http.server 8000 --bind 0.0.0.0 &gt;/tmp/ch08-http.log 2&gt;&amp;1 &amp; echo $! &gt;/tmp/ch08-http.pid'
+</code></pre>
+<p>Wait one second, then in Terminal B test the allowed path:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec -T public-a-test \
+  curl --fail --silent --show-error --connect-timeout 3 \
+  http://10.10.11.10:8000
+</code></pre>
+<p>Now test the blocked source/destination pair:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec -T public-a-test \
+  curl --silent --show-error --connect-timeout 2 \
+  http://10.10.12.10:8000
+</code></pre>
+<p><strong>Observe.</strong> The first request should print the Python directory-listing HTML.
+The second should fail with a timeout or another connection error after about
+two seconds. It should not print an HTTP response from <code>app-b-test</code>.</p>
+<p>Inspect counters after both requests:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec lab-router \
+  iptables -L FORWARD -n -v --line-numbers
+</code></pre>
+<p><strong>Explain.</strong> The first TCP connection reached a listener because its new flow
+matched:</p>
+<pre><code class="language-text">10.10.1.0/24 -&gt; 10.10.11.0/24 TCP dport 8000
+</code></pre>
+<p>Its return packets matched <code>ESTABLISHED,RELATED</code>. The second flow was routed
+toward <code>app_b</code>, but no allow rule matched it, so the default policy dropped it.</p>
+<p>If you skip the temporary listener, an allowed path to an unused port should
+report <code>Connection refused</code>. That means the host was reached and rejected the
+connection because no process was listening. A timeout is evidence of a drop
+or an unreachable path, not proof that the application rejected the request.</p>
+<h4 id="task-5-read-the-stateful-rule-counters">Task 5: Read the Stateful Rule Counters</h4>
+<p><strong>Predict.</strong> A single <code>curl</code> causes several packets in each direction. The
+specific new-flow rule should count the new connection, and the
+<code>ESTABLISHED,RELATED</code> rule should count return traffic.</p>
+<p><strong>Run.</strong> Make one more allowed request, then inspect the counters immediately:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec -T public-a-test \
+  curl --fail --silent --show-error --connect-timeout 3 \
+  http://10.10.11.10:8000 &gt;/dev/null
+bash scripts/compose-stage.sh 08 exec lab-router \
+  iptables -L FORWARD -n -v --line-numbers
+</code></pre>
+<p><strong>Observe.</strong> Counters on the public-A-to-app-A rule and the
+<code>ESTABLISHED,RELATED</code> rule should increase. Exact counts vary because TCP
+setup, HTTP, and teardown may produce different numbers of packets.</p>
+<p><strong>Explain.</strong> The state match is not an unrestricted allow. It accepts packets
+that conntrack associates with an already permitted flow, which is why one
+return rule can cover replies for all the allowed directions.</p>
+<h3 id="expected-observations">Expected Observations</h3>
+<p>The important evidence for this stage is:</p>
+<pre><code class="language-text">FORWARD policy: DROP
+allowed new flow: public_a -&gt; app_a TCP 8000
+blocked new flow: public_a -&gt; app_b TCP 8000
+return traffic: accepted by ESTABLISHED,RELATED
+ICMP across router: dropped because no ICMP allow rule exists
+</code></pre>
+<p>Keep this distinction in mind:</p>
+<pre><code class="language-text">Connection refused = packet reached a host with no listener
+Timeout           = packet was dropped or no response returned
+</code></pre>
+<p>Rule counters are stronger evidence than a timeout alone. Read the matching
+rule and its counter before changing routes or services.</p>
+<h3 id="break-it-flush-the-forward-rules">Break It: Flush the Forward Rules</h3>
+<p>Leave the temporary HTTP listener running for this exercise. This intentionally
+removes the allow rules while preserving the default policy of <code>DROP</code>.</p>
+<p><strong>Predict.</strong> The listener is healthy, but a request from <code>public-a-test</code> to
+<code>app-a-test</code> should now time out because the explicit allow rule is gone.</p>
+<p><strong>Run.</strong> In Terminal A:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec lab-router iptables -F FORWARD
+bash scripts/compose-stage.sh 08 exec lab-router \
+  iptables -L FORWARD -n -v --line-numbers
+</code></pre>
+<p>In Terminal B:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec -T public-a-test \
+  curl --silent --show-error --connect-timeout 2 \
+  http://10.10.11.10:8000
+</code></pre>
+<p><strong>Observe.</strong> The chain is empty apart from its default policy, and the request
+times out even though <code>app-a-test</code> still has a listening HTTP process.</p>
+<p><strong>Explain.</strong> The failure is at the router's policy boundary. The endpoint,
+route, and listener did not change.</p>
+<p><strong>Recovery.</strong> Recreate only <code>lab-router</code>. Its entrypoint rebuilds the intended
+policy:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 up -d --force-recreate lab-router
+bash scripts/compose-stage.sh 08 exec lab-router iptables -S FORWARD
+bash scripts/compose-stage.sh 08 exec -T public-a-test \
+  curl --fail --silent --show-error --connect-timeout 3 \
+  http://10.10.11.10:8000 &gt;/dev/null
+</code></pre>
+<p>The final command should succeed again. Stop the temporary listener:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec -T app-a-test \
+  sh -c 'kill "$(cat /tmp/ch08-http.pid)"'
+</code></pre>
+<h3 id="checkpoint-definition-of-done">Checkpoint: Definition of Done</h3>
+<p>You are ready for Chapter 09 when you can verify all of the following:</p>
+<ul>
+<li><code>iptables -S FORWARD</code> reports <code>-P FORWARD DROP</code>;</li>
+<li>the five intended new TCP flow rules are present;</li>
+<li>an allowed <code>public_a</code> to <code>app_a</code> request reaches a listener;</li>
+<li>an unallowed <code>public_a</code> to <code>app_b</code> request times out;</li>
+<li><code>ESTABLISHED,RELATED</code> counters increase for return traffic;</li>
+<li>flushing the chain breaks the allowed request;</li>
+<li>recreating <code>lab-router</code> restores the policy and the request works again.</li>
+</ul>
+<p>Mark the matching items in the progress checklist above as you complete them.</p>
+<h3 id="clean-up">Clean Up</h3>
+<p>If the temporary listener is still running, stop it first:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 exec -T app-a-test \
+  sh -c 'test ! -f /tmp/ch08-http.pid || kill "$(cat /tmp/ch08-http.pid)"'
+</code></pre>
+<p>Then remove the cumulative resources:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 08 down
+</code></pre>
+<h3 id="conclusion-next-chapter">Conclusion / Next Chapter</h3>
+<p>You turned an observed routed path into a policy-controlled path. The router
+now permits only the designed TCP flows and accepts their stateful replies.</p>
+<p>Chapter 09 marks the application and database Docker networks as
+<code>internal: true</code>. That adds a Docker bridge egress boundary; it does not
+replace the router's routes or its firewall policy.</p>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>Why is one ESTABLISHED,RELATED rule enough for replies?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → lab-router</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 08 exec lab-router iptables -S FORWARD</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 08 exec lab-router iptables -S FORWARD">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>Conntrack remembers the flow state, so permitted return traffic can match the state rule instead of needing a second reverse-direction allow rule.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="0" data-explanation="Conntrack distinguishes a reply in an established connection from a brand-new connection initiated by the app tier."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>If App → Public new connections are blocked, can an app container still send a reply to a Public → App connection that was already allowed?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes, with ESTABLISHED/RELATED state</button><button type="button" data-question-choice="1">No, all App → Public packets must be dropped</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="08" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>The route chooses the path; the firewall chooses whether the flow may use it.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/packet-tracing/"><span>Chapter 07</span><strong>Packet Tracing</strong><p>Turn a route-table prediction into evidence by watching ingress, forwarded egress, and the reply on the router.</p></a><a href="/labs/docker-networking/private-networks/"><span>Chapter 09</span><strong>Private Networks</strong><p>Mark the application and database bridges as internal so their normal Docker egress path disappears.</p></a><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/private-networks/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

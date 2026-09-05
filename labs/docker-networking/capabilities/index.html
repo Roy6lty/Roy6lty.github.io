@@ -1,0 +1,619 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Understand why root is restricted, what capabilities are, why route changes require CAP_NET_ADMIN, and why permission does not make a route valid.…"><meta name="theme-color" content="#101515"><title>Docker Linux Capabilities — NET_ADMIN &amp; NET_RAW Explained | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/capabilities/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="Docker Linux Capabilities — NET_ADMIN &amp; NET_RAW Explained | Ayo Olowoleru"><meta property="og:description" content="Understand why root is restricted, what capabilities are, why route changes require CAP_NET_ADMIN, and why permission does not make a route valid.…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/capabilities/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"Linux Capabilities","item":"https://ayo-olowoleru.xyz/labs/docker-networking/capabilities/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Docker Linux Capabilities — NET_ADMIN & NET_RAW Explained","description":"Understand why root is restricted, what capabilities are, why route changes require CAP_NET_ADMIN, and why permission does not make a route valid.…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/capabilities/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["root identity","CAP_NET_ADMIN","CAP_NET_RAW","cap_add"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>FOUNDATION</span><span>Chapter 04</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/04-capabilities/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 04 / FOUNDATION</span><h1>Linux Capabilities<br><em>Permission is part of the network. Root inside a container still needs the specific capability to change routes.</em></h1><p>Understand why root is restricted, what capabilities are, why route changes require CAP_NET_ADMIN, and why permission does not make a route valid.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>04<small>/ 17</small></strong><p>Permission to configure a route is not the same as a valid routed network path.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>04 / 17</span></div><div class="chapter-rail-progress"><span style="width:23.5%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link is-current" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/04-capabilities/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 04 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Builds the reusable lab-tools image with iproute2, iptables, tcpdump, curl, netcat, python3, and bind-tools.</p></div><div><span>Lab state</span><p>Reusable lab-tools image / capability experiments / six-network topology retained</p><div class="chapter-tags"><span>root identity</span><span>CAP_NET_ADMIN</span><span>CAP_NET_RAW</span><span>cap_add</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>Permission to configure a route is not the same as a valid routed network path.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/04-capabilities/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-04.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-04.svg" alt="Linux Capabilities topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Build the diagnostic image</h3><p>Create the reusable Alpine-based image used by later routing experiments.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>docker build -t docker-networking-vpc-lab/lab-tools:latest -f chapters/04-capabilities/tools/Dockerfile chapters/04-capabilities/tools</code></pre><button type="button" data-copy-command="docker build -t docker-networking-vpc-lab/lab-tools:latest -f chapters/04-capabilities/tools/Dockerfile chapters/04-capabilities/tools">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Predict the permission boundary</h3><p>Start without NET_ADMIN, enter as root, and compare identity with privileged operations.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>docker run -d --name lab-tools docker-networking-vpc-lab/lab-tools:latest</code></pre><button type="button" data-copy-command="docker run -d --name lab-tools docker-networking-vpc-lab/lab-tools:latest">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>docker exec -it lab-tools id</code></pre><button type="button" data-copy-command="docker exec -it lab-tools id">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Add the network capability</h3><p>Repeat the route operation with the capability granted by Compose.</p><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 04 up -d --build</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 04 up -d --build">Copy</button></div></div><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 04 exec app-a-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 04 exec app-a-test ip route">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Remove the capability in a disposable container and repeat the route command. Compare the permission error with a later connectivity failure.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>docker rm -f lab-tools</code></pre><button type="button" data-copy-command="docker rm -f lab-tools">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 04 down</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#goal">Goal</a><a href="#key-concepts">Key Concepts</a><a href="#what-are-linux-capabilities">What Are Linux Capabilities?</a><a href="#predict">Predict</a><a href="#package-installation-is-different">Package Installation Is Different</a><a href="#predict-2">Predict</a><a href="#observe">Observe</a></nav><div class="lesson-notes" data-static-notes><h3 id="goal">Goal</h3>
+<p>By the end of this chapter, you should understand:</p>
+<ul>
+<li>why root inside a container is still restricted;</li>
+<li>what Linux capabilities are;</li>
+<li>the difference between normal file permissions and Linux capabilities;</li>
+<li>why route changes require <code>CAP_NET_ADMIN</code>;</li>
+<li>how Docker Compose grants capabilities with <code>cap_add</code>;</li>
+<li>why permission to add a route does not mean that the route actually works.</li>
+</ul>
+<hr/>
+<h3 id="key-concepts">Key Concepts</h3>
+<p>Docker containers interact with the Linux kernel, but processes inside a container do not automatically receive every privilege available to root on the host.</p>
+<p>Linux uses <strong>capabilities</strong> to split traditional root privileges into smaller, more specific permissions.</p>
+<p>This allows a process or container to receive only the privileges required for a particular task.</p>
+<hr/>
+<h3 id="what-are-linux-capabilities">What Are Linux Capabilities?</h3>
+<p>Traditionally, Linux privilege can be thought of as:</p>
+<pre><code class="language-text">root
+or
+not root
+</code></pre>
+<p>Capabilities divide many traditional root privileges into smaller units.</p>
+<p>Examples include:</p>
+<pre><code class="language-text">CAP_NET_ADMIN
+CAP_NET_RAW
+CAP_SYS_ADMIN
+CAP_CHOWN
+CAP_KILL
+</code></pre>
+<p>Instead of giving a process unrestricted root privileges, Linux can grant only specific privileged operations.</p>
+<p>Conceptually:</p>
+<pre><code class="language-text">Traditional root
+
+        all privileged operations
+                 |
+                 v
+
+Linux capabilities
+
+CAP_NET_ADMIN   -&gt; network administration
+CAP_NET_RAW     -&gt; raw network packets and sockets
+CAP_CHOWN       -&gt; change file ownership
+CAP_KILL        -&gt; send certain signals
+CAP_SYS_TIME    -&gt; change system time
+...
+</code></pre>
+<hr/>
+<h2 id="experiment-1-build-the-test-image">Experiment 1: Build the Test Image</h2>
+<p>The diagnostic containers use a reusable Alpine-based image containing the tools needed throughout the networking lab.</p>
+<p>From the root of the repository, run:</p>
+<pre><code class="language-bash">docker build \
+  -t docker-networking-vpc-lab/lab-tools:latest \
+  -f chapters/04-capabilities/tools/Dockerfile \
+  chapters/04-capabilities/tools
+</code></pre>
+<p>The Dockerfile contains tools such as:</p>
+<pre><code class="language-text">iproute2
+iptables
+tcpdump
+curl
+netcat
+python3
+bind-tools
+</code></pre>
+<p>This prevents us from repeatedly installing the same diagnostic tools in every chapter.</p>
+<hr/>
+<h2 id="experiment-2-start-a-container-without-netadmin">Experiment 2: Start a Container Without <code>NET_ADMIN</code></h2>
+<p>For the first experiment, do <strong>not</strong> add <code>NET_ADMIN</code>.</p>
+<p>Run:</p>
+<pre><code class="language-bash">docker run -d \
+  --name lab-tools \
+  docker-networking-vpc-lab/lab-tools:latest
+</code></pre>
+<p>Enter the container:</p>
+<pre><code class="language-bash">docker exec -it lab-tools sh
+</code></pre>
+<hr/>
+<h3 id="predict">Predict</h3>
+<p>Before running the next command:</p>
+<blockquote>
+<p>Do you think the process inside the container is running as root?</p>
+</blockquote>
+<p>Run:</p>
+<pre><code class="language-bash">id
+</code></pre>
+<p>You should see something similar to:</p>
+<pre><code class="language-text">uid=0(root) gid=0(root) groups=0(root)
+</code></pre>
+<p>This confirms that the shell is running as root inside the container.</p>
+<p>You can also inspect the processes:</p>
+<pre><code class="language-bash">ps
+</code></pre>
+<p>Example:</p>
+<pre><code class="language-text">PID   USER     TIME  COMMAND
+1     root      0:00 sleep infinity
+13    root      0:00 sh
+20    root      0:00 ps
+</code></pre>
+<p>So the container process is clearly running as:</p>
+<pre><code class="language-text">root
+</code></pre>
+<p>But this does <strong>not</strong> mean it has every privilege available to root on the host.</p>
+<hr/>
+<h2 id="root-identity-vs-privileged-operations">Root Identity vs Privileged Operations</h2>
+<p>A useful mental model is:</p>
+<pre><code class="language-text">root
+=
+user identity
+
+Linux capability
+=
+permission to perform a particular privileged kernel operation
+</code></pre>
+<p>Docker removes or limits several capabilities from containers by default.</p>
+<p>Therefore:</p>
+<pre><code class="language-text">root inside container
+!=
+unrestricted root on the host
+</code></pre>
+<hr/>
+<h2 id="experiment-3-normal-file-operations">Experiment 3: Normal File Operations</h2>
+<p>Try:</p>
+<pre><code class="language-bash">cat /etc/os-release
+</code></pre>
+<p>This should work.</p>
+<p>The command only reads a file that is normally world-readable.</p>
+<p>It does not require a special Linux capability.</p>
+<p>Conceptually:</p>
+<pre><code class="language-text">cat /etc/os-release
+        |
+        v
+normal file read
+        |
+        v
+ordinary Unix file permissions
+</code></pre>
+<p>A normal non-root user can usually read this file as well.</p>
+<hr/>
+<h3 id="package-installation-is-different">Package Installation Is Different</h3>
+<p>Now consider:</p>
+<pre><code class="language-bash">apk add curl
+</code></pre>
+<p>Installing packages is different from simply reading <code>/etc/os-release</code>.</p>
+<p>A package manager needs to modify system-owned directories such as:</p>
+<pre><code class="language-text">/usr/bin
+/usr/lib
+/etc
+/lib
+/var/lib/apk
+</code></pre>
+<p>Therefore package installation normally requires root or equivalent filesystem privileges.</p>
+<p>This is mainly about:</p>
+<pre><code class="language-text">filesystem ownership
++
+file permissions
+</code></pre>
+<p>not a special capability called:</p>
+<pre><code class="language-text">CAP_INSTALL_PACKAGE
+</code></pre>
+<p>because no such capability exists.</p>
+<p>So:</p>
+<pre><code class="language-text">cat /etc/os-release
+        |
+        v
+ordinary read permission
+
+
+apk add curl
+        |
+        v
+root normally required to modify system files
+
+
+ip route add ...
+        |
+        v
+privileged kernel networking operation
+        |
+        v
+CAP_NET_ADMIN required
+</code></pre>
+<p>This distinction is important:</p>
+<pre><code class="language-text">Unix file permissions
+!=
+Linux capabilities
+</code></pre>
+<hr/>
+<h2 id="experiment-4-can-container-root-modify-routing">Experiment 4: Can Container Root Modify Routing?</h2>
+<p>First inspect the current routing table:</p>
+<pre><code class="language-bash">ip route
+</code></pre>
+<p>You may see something similar to:</p>
+<pre><code class="language-text">default via 172.17.0.1 dev eth0
+172.17.0.0/16 dev eth0 scope link src 172.17.0.2
+</code></pre>
+<p>Now try adding a route:</p>
+<pre><code class="language-bash">ip route add 10.50.0.0/24 via 172.17.0.1
+</code></pre>
+<hr/>
+<h3 id="predict-2">Predict</h3>
+<p>You are root.</p>
+<p>Will the command succeed?</p>
+<hr/>
+<h3 id="observe">Observe</h3>
+<p>Without <code>NET_ADMIN</code>, Linux should reject the operation:</p>
+<pre><code class="language-text">RTNETLINK answers: Operation not permitted
+</code></pre>
+<p>The problem is not the syntax of the route.</p>
+<p>The process does not have permission to modify networking state.</p>
+<p>We have now demonstrated:</p>
+<pre><code class="language-text">root
+ |
+ | CAP_NET_ADMIN missing
+ v
+ip route add ...
+ |
+ v
+Operation not permitted
+</code></pre>
+<p>This raises an important question:</p>
+<blockquote>
+<p>If the process is root, why was it denied?</p>
+</blockquote>
+<p>The answer is Linux capabilities.</p>
+<hr/>
+<h2 id="linux-capabilities">Linux Capabilities</h2>
+<p>Linux splits many traditional root privileges into separate capabilities.</p>
+<p>Some important examples are:</p>
+<ol>
+<li><p><code>CAP_NET_ADMIN</code></p>
+<p>Routes, interfaces, firewall rules, NAT and traffic control.</p>
+</li>
+<li><p><code>CAP_NET_RAW</code></p>
+<p>Raw sockets and packet-level networking operations.</p>
+</li>
+<li><p><code>CAP_CHOWN</code></p>
+<p>Change file ownership.</p>
+</li>
+<li><p><code>CAP_DAC_OVERRIDE</code></p>
+<p>Bypass many normal filesystem permission checks.</p>
+</li>
+<li><p><code>CAP_SETUID</code></p>
+<p>Change process user identity.</p>
+</li>
+<li><p><code>CAP_SETGID</code></p>
+<p>Change process group identity.</p>
+</li>
+<li><p><code>CAP_SYS_PTRACE</code></p>
+<p>Debug or trace other processes.</p>
+</li>
+<li><p><code>CAP_SYS_TIME</code></p>
+<p>Change the system clock.</p>
+</li>
+<li><p><code>CAP_SYS_MODULE</code></p>
+<p>Load and unload kernel modules.</p>
+</li>
+<li><p><code>CAP_SYS_ADMIN</code></p>
+<p>Grants a very large collection of administrative operations.</p>
+</li>
+<li><p><code>CAP_MKNOD</code></p>
+<p>Create special device nodes.</p>
+</li>
+</ol>
+<hr/>
+<h2 id="capnetadmin">CAP_NET_ADMIN</h2>
+<p><code>CAP_NET_ADMIN</code> grants permission for many network-administration operations.</p>
+<p>Examples include:</p>
+<ul>
+<li>adding and deleting routes;</li>
+<li>changing network interfaces;</li>
+<li>changing interface addresses;</li>
+<li>manipulating firewall rules;</li>
+<li>configuring traffic-control settings;</li>
+<li>modifying certain networking parameters.</li>
+</ul>
+<p>Without this capability:</p>
+<pre><code class="language-bash">ip route add 10.10.12.0/24 via 10.10.11.1
+</code></pre>
+<p>normally fails with:</p>
+<pre><code class="language-text">RTNETLINK answers: Operation not permitted
+</code></pre>
+<p>The kernel understands the command.</p>
+<p>It simply refuses permission to perform the operation.</p>
+<hr/>
+<h2 id="capnetraw">CAP_NET_RAW</h2>
+<p><code>CAP_NET_RAW</code> allows operations involving raw network sockets and packets.</p>
+<p>It is commonly associated with:</p>
+<pre><code class="language-text">ping
+raw sockets
+packet-generation tools
+some packet-level operations
+</code></pre>
+<p>Modern Linux systems may sometimes allow <code>ping</code> through additional kernel mechanisms, so exact behavior can vary.</p>
+<p>For this lab, the important distinction is:</p>
+<pre><code class="language-text">CAP_NET_ADMIN
+=
+change network configuration
+
+CAP_NET_RAW
+=
+work with raw network packets and sockets
+</code></pre>
+<p>They are separate capabilities because they allow different privileged operations.</p>
+<hr/>
+<h2 id="experiment-5-grant-netadmin">Experiment 5: Grant <code>NET_ADMIN</code></h2>
+<p>Stop and remove the test container:</p>
+<pre><code class="language-bash">docker rm -f lab-tools
+</code></pre>
+<p>Start it again with <code>NET_ADMIN</code>:</p>
+<pre><code class="language-bash">docker run -d \
+  --name lab-tools \
+  --cap-add NET_ADMIN \
+  docker-networking-vpc-lab/lab-tools:latest
+</code></pre>
+<p>Enter the container:</p>
+<pre><code class="language-bash">docker exec -it lab-tools sh
+</code></pre>
+<p>Confirm that you are still root:</p>
+<pre><code class="language-bash">id
+</code></pre>
+<p>You should still see:</p>
+<pre><code class="language-text">uid=0(root) gid=0(root) groups=0(root)
+</code></pre>
+<p>Now run the exact same route command:</p>
+<pre><code class="language-bash">ip route add 10.50.0.0/24 via 172.17.0.1
+</code></pre>
+<p>Inspect the routing table:</p>
+<pre><code class="language-bash">ip route
+</code></pre>
+<p>You should now see:</p>
+<pre><code class="language-text">10.50.0.0/24 via 172.17.0.1 dev eth0
+</code></pre>
+<p>The command succeeded because the process now has:</p>
+<pre><code class="language-text">CAP_NET_ADMIN
+</code></pre>
+<p>So:</p>
+<pre><code class="language-text">root
+ |
+ | CAP_NET_ADMIN present
+ v
+ip route add ...
+ |
+ v
+kernel accepts route-table modification
+</code></pre>
+<hr/>
+<h2 id="capadd-in-docker-compose"><code>cap_add</code> in Docker Compose</h2>
+<p>Docker Compose allows capabilities to be added using:</p>
+<pre><code class="language-yaml">cap_add:
+  - NET_ADMIN
+</code></pre>
+<p>For example:</p>
+<pre><code class="language-yaml">services:
+  app-a-test:
+    image: docker-networking-vpc-lab/lab-tools:latest
+    cap_add:
+      - NET_ADMIN
+    networks:
+      app_a:
+        ipv4_address: 10.10.11.10
+</code></pre>
+<p>Docker Compose normally uses the capability name without the <code>CAP_</code> prefix.</p>
+<p>So:</p>
+<pre><code class="language-text">Linux capability      Docker Compose
+
+CAP_NET_ADMIN    -&gt;    NET_ADMIN
+CAP_NET_RAW      -&gt;    NET_RAW
+CAP_SYS_TIME     -&gt;    SYS_TIME
+</code></pre>
+<hr/>
+<h2 id="why-not-use-privileged-true">Why Not Use <code>privileged: true</code>?</h2>
+<p>Docker also supports:</p>
+<pre><code class="language-yaml">privileged: true
+</code></pre>
+<p>But this gives the container significantly more access than required for this lab.</p>
+<p>That would hide the security boundary we are trying to understand.</p>
+<p>Instead of:</p>
+<pre><code class="language-yaml">privileged: true
+</code></pre>
+<p>we use:</p>
+<pre><code class="language-yaml">cap_add:
+  - NET_ADMIN
+</code></pre>
+<p>because the container only needs permission to modify networking configuration.</p>
+<p>The general rule is:</p>
+<pre><code class="language-text">grant the minimum privilege required
+</code></pre>
+<hr/>
+<h2 id="chapter-04-lab-topology">Chapter 04 Lab Topology</h2>
+<p>The network topology does not change.</p>
+<p>The six isolated bridge networks from the previous chapter remain:</p>
+<pre><code class="language-text">+-------------------------+      +-------------------------+
+| public_a 10.10.1.0/24   |      | public_b 10.10.2.0/24   |
+|                         |      |                         |
+| public-a-test           |      | public-b-test           |
+| 10.10.1.10              |      | 10.10.2.10              |
++-------------------------+      +-------------------------+
+
+
++-------------------------+      +-------------------------+
+| app_a 10.10.11.0/24     |      | app_b 10.10.12.0/24     |
+|                         |      |                         |
+| app-a-test              |      | app-b-test              |
+| 10.10.11.10             |      | 10.10.12.10              |
++-------------------------+      +-------------------------+
+
+
++-------------------------+      +-------------------------+
+| db_a 10.10.21.0/24      |      | db_b 10.10.22.0/24      |
+|                         |      |                         |
+| db-a-test               |      | db-b-test               |
+| 10.10.21.10              |      | 10.10.22.10              |
++-------------------------+      +-------------------------+
+</code></pre>
+<p>What changes in this chapter is the <strong>permission boundary</strong>.</p>
+<hr/>
+<h2 id="experiment-6-start-the-chapter-04-lab">Experiment 6: Start the Chapter 04 Lab</h2>
+<p>Start the stage:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 04 up -d
+</code></pre>
+<p>Confirm the containers are running:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 04 ps
+</code></pre>
+<hr/>
+<h2 id="confirm-the-container-user">Confirm the Container User</h2>
+<p>Run:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 04 exec app-a-test id
+</code></pre>
+<p>Expected output:</p>
+<pre><code class="language-text">uid=0(root) gid=0(root) groups=0(root)
+</code></pre>
+<p>This confirms that the process runs as root.</p>
+<p>The important question is now:</p>
+<blockquote>
+<p>Which capabilities has Docker given this root process?</p>
+</blockquote>
+<hr/>
+<h2 id="experiment-7-inspect-the-routing-table">Experiment 7: Inspect the Routing Table</h2>
+<p>Enter <code>app-a-test</code>:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 04 exec app-a-test sh
+</code></pre>
+<p>Then inspect the routing table:</p>
+<pre><code class="language-bash">ip route
+</code></pre>
+<p>You should see the directly connected <code>app_a</code> network:</p>
+<pre><code class="language-text">10.10.11.0/24 dev eth0 scope link src 10.10.11.10
+</code></pre>
+<p>You will also normally see a default route through Docker's bridge gateway.</p>
+<hr/>
+<h2 id="experiment-8-add-a-route">Experiment 8: Add a Route</h2>
+<p>Add:</p>
+<pre><code class="language-bash">ip route add 10.10.12.0/24 via 10.10.11.1
+</code></pre>
+<p>Then inspect the routing table again:</p>
+<pre><code class="language-bash">ip route
+</code></pre>
+<p>You should now see something similar to:</p>
+<pre><code class="language-text">10.10.11.0/24 dev eth0 scope link src 10.10.11.10
+10.10.12.0/24 via 10.10.11.1 dev eth0
+</code></pre>
+<p>This proves that the process has permission to modify its routing table.</p>
+<hr/>
+<h2 id="prediction-checkpoint">Prediction Checkpoint</h2>
+<p>We have successfully added:</p>
+<pre><code class="language-text">10.10.12.0/24 via 10.10.11.1
+</code></pre>
+<p>Before testing connectivity, predict what will happen.</p>
+<p>Will <code>app-a-test</code> now be able to reach:</p>
+<pre><code class="language-text">10.10.12.10
+</code></pre>
+<p>Choose one:</p>
+<pre><code class="language-text">A. Yes. A route exists, so communication should work.
+
+B. No. The route exists, but 10.10.11.1 is not acting as the router
+   between app_a and app_b.
+
+C. No. Docker does not support routing between networks.
+</code></pre>
+<p>Now test:</p>
+<pre><code class="language-bash">ping 10.10.12.10
+</code></pre>
+<hr/>
+<h2 id="important-observation">Important Observation</h2>
+<p>The route:</p>
+<pre><code class="language-text">10.10.12.0/24 via 10.10.11.1
+</code></pre>
+<p>does <strong>not</strong> mean communication with <code>10.10.12.0/24</code> will work.</p>
+<p>It only tells the kernel:</p>
+<blockquote>
+<p>For packets going to <code>10.10.12.0/24</code>, send them to <code>10.10.11.1</code> as the next hop.</p>
+</blockquote>
+<p>But:</p>
+<pre><code class="language-text">10.10.11.1
+</code></pre>
+<p>is currently the Docker bridge gateway.</p>
+<p>It is not our lab router connecting <code>app_a</code> to <code>app_b</code>.</p>
+<p>At this stage we have only demonstrated:</p>
+<pre><code class="language-text">CAP_NET_ADMIN
+      |
+      v
+kernel allows routing-table modification
+</code></pre>
+<p>We have <strong>not</strong> created a valid routed path between the two networks.</p>
+<p>This distinction is important:</p>
+<pre><code class="language-text">permission to add a route
+!=
+working route
+</code></pre>
+<p>The kernel accepted the routing-table entry.</p>
+<p>That does not mean the selected next hop knows how to deliver the packet to the destination network.</p>
+<hr/>
+<h2 id="experiment-9-remove-netadmin">Experiment 9: Remove <code>NET_ADMIN</code></h2>
+<p>Now deliberately break the configuration.</p>
+<p>Remove:</p>
+<pre><code class="language-yaml">cap_add:
+  - NET_ADMIN
+</code></pre>
+<p>from <code>app-a-test</code>.</p>
+<p>Recreate the container:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 04 up -d
+</code></pre>
+<p>Confirm that it is still root:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 04 exec app-a-test id
+</code></pre>
+<p>You should still see:</p>
+<pre><code class="language-text">uid=0(root) gid=0(root) groups=0(root)
+</code></pre>
+<p>Now attempt:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 04 exec app-a-test \
+  ip route add 10.10.12.0/24 via 10.10.11.1
+</code></pre>
+<p>Expected result:</p>
+<pre><code class="language-text">RTNETLINK answers: Operation not permitted
+</code></pre>
+<p>This demonstrates:</p>
+<pre><code class="language-text">root
+ |
+ | CAP_NET_ADMIN missing
+ v
+network modification
+ |
+ v
+denied
+</code></pre>
+<p>Restore <code>NET_ADMIN</code> afterward.</p>
+<hr/>
+<h2 id="key-mental-model">Key Mental Model</h2>
+<pre><code class="language-text">root
+=
+user identity
+
+Linux capability
+=
+permission to perform a particular privileged operation
+</code></pre>
+<p>For this chapter:</p>
+<pre><code class="language-text">CAP_NET_ADMIN
+      |
+      +--&gt; modify routes
+      +--&gt; modify interfaces
+      +--&gt; configure firewall rules
+      +--&gt; configure NAT
+      +--&gt; configure many network settings
+</code></pre>
+<p>Docker Compose:</p>
+<pre><code class="language-yaml">cap_add:
+  - NET_ADMIN
+</code></pre>
+<p>grants that capability to the container.</p>
+<p>But:</p>
+<pre><code class="language-text">CAP_NET_ADMIN
+=
+permission to configure networking
+
+not
+
+CAP_NET_ADMIN
+=
+automatic network connectivity
+</code></pre>
+<p>A working network connection still requires:</p>
+<pre><code class="language-text">valid interfaces
+      +
+valid addressing
+      +
+valid routes
+      +
+a valid next hop
+      +
+a forwarding device when crossing subnets
+      +
+firewall permission
+      +
+a listening application
+</code></pre>
+<hr/>
+<h2 id="what-we-learned">What We Learned</h2>
+<p>We started with:</p>
+<pre><code class="language-text">root inside container
+</code></pre>
+<p>and discovered that root could perform ordinary filesystem operations but could not modify the routing table.</p>
+<p>Then we added:</p>
+<pre><code class="language-text">CAP_NET_ADMIN
+</code></pre>
+<p>and repeated the same operation.</p>
+<p>The kernel accepted it.</p>
+<p>Finally, we learned that:</p>
+<pre><code class="language-text">permission to configure a route
+!=
+a valid routed network path
+</code></pre>
+<p>This prepares us for the next stage, where we introduce an actual router between the isolated Docker networks.</p>
+<hr/>
+<h3 id="clean-up">Clean Up</h3>
+<p>Remove the resources created for this stage:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 04 down
+</code></pre>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>What did NET_ADMIN change?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 04 exec app-a-test ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 04 exec app-a-test ip route">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>It grants permission to perform network administration. It does not create interfaces, routes, next hops, forwarding, firewall permission, or a listener by itself.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="Container root is constrained by Linux capabilities. Identity and permission are separate questions."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>A process is UID 0 inside a container. Without NET_ADMIN, can it modify the container routing table?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes, root bypasses the capability model</button><button type="button" data-question-choice="1">No, NET_ADMIN is still required</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="04" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>Permission to configure a route is not the same as a valid routed network path.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/network-namespaces/"><span>Chapter 03</span><strong>Network Namespaces and Interfaces</strong><p>Look inside the Linux networking view Docker created for one container before introducing routing.</p></a><a href="/labs/docker-networking/router-container/"><span>Chapter 05</span><strong>Multi-Homed Router Container</strong><p>Introduce a Layer-3 device attached to all six bridges, then observe the connected routes Linux creates for it.</p></a><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/router-container/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

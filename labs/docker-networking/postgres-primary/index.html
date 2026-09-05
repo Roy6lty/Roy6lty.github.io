@@ -1,0 +1,298 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Validate application-to-database routing at TCP and SQL layers without confusing network filtering with pg_hba.conf. Add a writable database to the database…"><meta name="theme-color" content="#101515"><title>PostgreSQL Primary on a Docker Private Network — Hands-on Lab | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/postgres-primary/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="PostgreSQL Primary on a Docker Private Network — Hands-on Lab | Ayo Olowoleru"><meta property="og:description" content="Validate application-to-database routing at TCP and SQL layers without confusing network filtering with pg_hba.conf. Add a writable database to the database…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/postgres-primary/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"PostgreSQL Primary","item":"https://ayo-olowoleru.xyz/labs/docker-networking/postgres-primary/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"PostgreSQL Primary on a Docker Private Network — Hands-on Lab","description":"Validate application-to-database routing at TCP and SQL layers without confusing network filtering with pg_hba.conf. Add a writable database to the database…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/postgres-primary/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["TCP handshake","FORWARD vs pg_hba.conf","writable primary","WAL"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>SERVICES</span><span>Chapter 13</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/13-postgres-primary/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 13 / SERVICES</span><h1>PostgreSQL Primary<br><em>Add a writable database to the database tier and validate the path at TCP, SQL, process, and authentication layers.</em></h1><p>Validate application-to-database routing at TCP and SQL layers without confusing network filtering with pg_hba.conf.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>13<small>/ 17</small></strong><p>iptables decides whether the packet crosses; PostgreSQL decides whether the session is accepted.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>13 / 17</span></div><div class="chapter-rail-progress"><span style="width:76.5%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link is-current" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/13-postgres-primary/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 13 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Adds postgres-primary at 10.10.21.20, return routes to both app networks and the future replica, and replication settings for chapter 15.</p></div><div><span>Lab state</span><p>Writable PostgreSQL primary on db_a / app-to-database routing and database policy</p><div class="chapter-tags"><span>TCP handshake</span><span>FORWARD vs pg_hba.conf</span><span>writable primary</span><span>WAL</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>iptables decides whether the packet crosses; PostgreSQL decides whether the session is accepted.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/13-postgres-primary/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-13.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-13.svg" alt="PostgreSQL Primary topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>Test transport reachability</h3><p>Use netcat to prove the TCP handshake before testing SQL.</p><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 13 exec app-a-test nc -vz -w 3 10.10.21.20 5432</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 13 exec app-a-test nc -vz -w 3 10.10.21.20 5432">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Run a SQL query</h3><p>The database layer is a separate check after the port is open.</p><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-primary</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 13 exec postgres-primary psql -U labadmin -d labdb -c &#x27;SELECT version();&#x27;</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 13 exec postgres-primary psql -U labadmin -d labdb -c &#x27;SELECT version();&#x27;">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Inspect the server process</h3><p>Confirm the primary is writable and ready for a future standby.</p><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-primary</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 13 exec postgres-primary ps -ef</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 13 exec postgres-primary ps -ef">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Remove the primary route to app_a and observe the client-side connection hang despite the router forward rule.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-primary</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 13 exec postgres-primary ip route</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 13 exec postgres-primary ip route">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 13 up -d --force-recreate postgres-primary</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#key-concepts">Key Concepts</a><a href="#tcp-is-transport-not-sql">TCP is transport, not SQL</a><a href="#routing-firewall-and-postgresql-policy-are-separate">Routing, firewall, and PostgreSQL policy are separate</a><a href="#the-primary-is-writable">The primary is writable</a><a href="#goal">Goal</a><a href="#from-chapter-12">From Chapter 12</a><a href="#what-this-stage-adds">What This Stage Adds</a></nav><div class="lesson-notes" data-static-notes><h3 id="key-concepts">Key Concepts</h3>
+<h4 id="tcp-is-transport-not-sql">TCP is transport, not SQL</h4>
+<p>A TCP handshake proves that a client can reach a listening port. It does not
+prove that PostgreSQL accepted credentials, selected the expected database, or
+authorized a SQL statement.</p>
+<pre><code class="language-text">nc -vz 10.10.21.20 5432
+    = TCP transport test
+
+psql ... -c 'SELECT ...'
+    = PostgreSQL protocol, authentication, and SQL test
+</code></pre>
+<h4 id="routing-firewall-and-postgresql-policy-are-separate">Routing, firewall, and PostgreSQL policy are separate</h4>
+<p>The application-to-database path crosses several boundaries:</p>
+<pre><code class="language-text">app route
+    |
+    v
+lab-router FORWARD rule
+    |
+    v
+PostgreSQL TCP listener
+    |
+    v
+pg_hba.conf and password authentication
+    |
+    v
+SQL authorization and execution
+</code></pre>
+<p><code>iptables</code> on <code>lab-router</code> decides whether a forwarded packet may cross the
+router. <code>pg_hba.conf</code> is evaluated by PostgreSQL after the connection reaches
+the database server. Neither one installs a route.</p>
+<h4 id="the-primary-is-writable">The primary is writable</h4>
+<p><code>postgres-primary</code> is the writable database in <code>db_a</code>. Its Compose command
+enables the settings needed by the later physical replication chapter:</p>
+<pre><code class="language-text">wal_level=replica
+max_wal_senders=10
+listen_addresses=*
+</code></pre>
+<p>The primary generates WAL when it changes data. A replica will consume that WAL
+in a later chapter.</p>
+<h3 id="goal">Goal</h3>
+<p>Add <code>postgres-primary</code> to the routed database tier and validate the path from
+both application networks at the TCP, PostgreSQL, and SQL layers.</p>
+<p>By the end, you should be able to:</p>
+<ul>
+<li>identify the primary's address and return routes;</li>
+<li>explain why the application route uses <code>lab-router</code>;</li>
+<li>distinguish a TCP handshake from SQL authentication;</li>
+<li>explain the order of <code>FORWARD</code>, TCP listening, and <code>pg_hba.conf</code>;</li>
+<li>confirm that the primary is writable and ready for replication.</li>
+</ul>
+<h3 id="from-chapter-12">From Chapter 12</h3>
+<p>Chapter 12 added public Nginx reverse proxies and Python app listeners. Those
+HTTP paths remain in the cumulative stack, but the database path does not use
+Nginx:</p>
+<pre><code class="language-text">app-a-test -&gt; lab-router -&gt; postgres-primary
+app-b-test -&gt; lab-router -&gt; postgres-primary
+</code></pre>
+<p>The app routes to <code>db_a</code> through the router interface on its own subnet:</p>
+<pre><code class="language-text">app-a-test 10.10.11.10 -&gt; 10.10.11.2
+app-b-test 10.10.12.10 -&gt; 10.10.12.2
+</code></pre>
+<p>The primary's return routes use its local router address, <code>10.10.21.2</code>, for
+both application subnets.</p>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>The overlay adds one service and one named data volume:</p>
+<pre><code class="language-text">postgres-primary
+    10.10.21.20 on db_a
+    TCP 5432
+    named volume: postgres_primary_data
+</code></pre>
+<p>Its lab entrypoint runs these routes before delegating to the official
+PostgreSQL entrypoint:</p>
+<pre><code class="language-bash">ip route replace 10.10.11.0/24 via 10.10.21.2
+ip route replace 10.10.12.0/24 via 10.10.21.2
+ip route replace 10.10.22.0/24 via 10.10.21.2
+</code></pre>
+<p>On a fresh named volume, <code>init.sql</code> creates:</p>
+<pre><code class="language-text">replicator role with REPLICATION and LOGIN
+users table
+primary-seed row
+</code></pre>
+<p>The host-only lab credentials are <code>labadmin</code> / <code>postgres</code>. The replication
+role uses <code>replicator</code> / <code>replica_password</code> for later chapters.</p>
+<h3 id="progress">Progress</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can find <code>postgres-primary</code> at <code>10.10.21.20:5432</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can identify the app forward route and primary return route.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can prove TCP reachability separately from SQL authentication.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can explain the roles of <code>iptables</code> and <code>pg_hba.conf</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can prove the primary is writable and configured for future WAL sending.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can recover the primary after removing one return route.</li>
+</ul>
+<h3 id="tasks">Tasks</h3>
+<h4 id="1-start-the-primary-and-wait-for-readiness">1. Start the primary and wait for readiness</h4>
+<p><strong>Predict:</strong> The cumulative stage should contain all Chapter 12 services plus
+<code>postgres-primary</code>. The healthcheck should eventually report that PostgreSQL is
+accepting connections.</p>
+<p><strong>Run:</strong></p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 13 up -d --build --wait
+bash scripts/compose-stage.sh 13 ps
+bash scripts/compose-stage.sh 13 exec postgres-primary \
+  pg_isready -U labadmin -d labdb
+</code></pre>
+<p><strong>Observe:</strong> <code>postgres-primary</code> should be running, and <code>pg_isready</code> should
+report that the server is accepting connections. On a new volume, the logs may
+also show the normal PostgreSQL initialization and the mounted <code>init.sql</code>.</p>
+<p><strong>Explain:</strong> The healthcheck is a readiness check for PostgreSQL, not a proof
+that an application can route to it. The client route, router firewall, and
+database return path still need separate tests.</p>
+<h4 id="2-inspect-the-database-address-and-both-route-decisions">2. Inspect the database address and both route decisions</h4>
+<p><strong>Predict:</strong> The primary should have an interface in <code>db_a</code> and explicit return
+routes to both app networks. <code>app-a-test</code> should select the router on <code>app_a</code>,
+while <code>lab-router</code> should select its directly connected <code>db_a</code> interface.</p>
+<p><strong>Run:</strong></p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 13 exec postgres-primary ip addr
+bash scripts/compose-stage.sh 13 exec postgres-primary ip route
+
+bash scripts/compose-stage.sh 13 exec app-a-test \
+  ip route get 10.10.21.20
+
+bash scripts/compose-stage.sh 13 exec lab-router \
+  ip route get 10.10.21.20
+</code></pre>
+<p><strong>Observe:</strong> The important results should include:</p>
+<pre><code class="language-text">postgres-primary: 10.10.21.20/24
+primary return:   10.10.11.0/24 via 10.10.21.2
+                  10.10.12.0/24 via 10.10.21.2
+app-a route:      10.10.21.20 via 10.10.11.2
+router route:     10.10.21.20 dev &lt;db_a-interface&gt; src 10.10.21.2
+</code></pre>
+<p>The exact interface names and extra route fields can vary.</p>
+<p><strong>Explain:</strong> <code>app-a-test</code> cannot use <code>10.10.21.2</code> as its first next hop because
+that address is not on <code>app_a</code>. It uses <code>10.10.11.2</code>, the router address on its
+own subnet. The router then uses its directly connected <code>db_a</code> route. The
+primary needs a return route because a TCP exchange travels in both directions.</p>
+<h4 id="3-prove-the-tcp-path-from-both-app-networks">3. Prove the TCP path from both app networks</h4>
+<p><strong>Predict:</strong> Both app-to-primary TCP handshakes should succeed. The matching
+TCP 5432 <code>FORWARD</code> counters on <code>lab-router</code> should increase.</p>
+<p><strong>Run:</strong> Capture the rules before and after the tests:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 13 exec lab-router \
+  iptables -L FORWARD -n -v --line-numbers
+
+bash scripts/compose-stage.sh 13 exec app-a-test \
+  nc -vz -w 3 10.10.21.20 5432
+
+bash scripts/compose-stage.sh 13 exec app-b-test \
+  nc -vz -w 3 10.10.21.20 5432
+
+bash scripts/compose-stage.sh 13 exec lab-router \
+  iptables -L FORWARD -n -v --line-numbers
+</code></pre>
+<p><strong>Observe:</strong> <code>nc</code> should report that port 5432 is open from both app
+containers. The counters for the app-to-<code>db_a</code> TCP 5432 rules should be higher
+after the tests. The established return rule accounts for reply packets.</p>
+<p><strong>Explain:</strong> <code>nc -z</code> does not send a SQL query. It tests the route, the
+router's <code>FORWARD</code> decision, the primary's TCP listener, and the return path.
+It does not test <code>labadmin</code>, <code>labdb</code>, <code>pg_hba.conf</code> authentication, or SQL.</p>
+<h4 id="4-test-postgresql-authentication-sql-and-primary-state">4. Test PostgreSQL authentication, SQL, and primary state</h4>
+<p><strong>Predict:</strong> A TCP connection using the lab credentials should pass the host
+rule in <code>pg_hba.conf</code>. The server should report <code>pg_is_in_recovery()</code> as <code>f</code>,
+and an insert should succeed because this is the writable primary.</p>
+<p><strong>Run:</strong> The lab-tools image intentionally contains network tools, not <code>psql</code>.
+Use the PostgreSQL client installed in <code>postgres-primary</code>; the <code>-h</code> option
+makes this an explicit TCP and host-authentication test from that container.</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 13 exec postgres-primary \
+  env PGPASSWORD=postgres psql -h 10.10.21.20 -U labadmin -d labdb \
+  -c 'SELECT current_user, current_database(), pg_is_in_recovery();'
+
+bash scripts/compose-stage.sh 13 exec postgres-primary \
+  psql -U labadmin -d labdb -c 'SELECT id, name FROM users ORDER BY id;'
+
+bash scripts/compose-stage.sh 13 exec postgres-primary \
+  psql -U labadmin -d labdb \
+  -c "INSERT INTO users (name) VALUES ('chapter-13-check') RETURNING id, name;"
+
+bash scripts/compose-stage.sh 13 exec postgres-primary \
+  psql -U labadmin -d labdb -c 'SHOW wal_level; SHOW max_wal_senders;'
+
+bash scripts/compose-stage.sh 13 exec postgres-primary \
+  cat /etc/postgresql/pg_hba.conf
+</code></pre>
+<p><strong>Observe:</strong> The TCP <code>psql</code> query should show user <code>labadmin</code>, database
+<code>labdb</code>, and <code>f</code> for <code>pg_is_in_recovery()</code>. A fresh volume should contain the
+<code>primary-seed</code> row; an existing named volume may also contain rows from earlier
+runs. The insert should return a new row. <code>wal_level</code> should be <code>replica</code> and
+<code>max_wal_senders</code> should be <code>10</code>.</p>
+<p><strong>Explain:</strong> The local <code>psql</code> command that reads <code>users</code> uses the container's
+local PostgreSQL access path, while the <code>-h 10.10.21.20</code> command exercises a
+TCP connection and the host rule. Neither command should be described as an
+app-container route test; the <code>nc</code> commands performed that transport test.</p>
+<p>The layer order is:</p>
+<pre><code class="language-text">route -&gt; router FORWARD -&gt; TCP 5432 -&gt; pg_hba.conf -&gt; password -&gt; SQL
+</code></pre>
+<h3 id="expected-observations">Expected Observations</h3>
+<pre><code class="language-text">app-a-test 10.10.11.10
+        |
+        | route via 10.10.11.2
+        v
+lab-router
+        |
+        | connected db_a route, FORWARD TCP/5432 allowed
+        v
+postgres-primary 10.10.21.20:5432
+        |
+        | return via 10.10.21.2
+        v
+app-a-test
+</code></pre>
+<p>The B-side request follows the same pattern through <code>10.10.12.2</code> and returns
+through the primary's <code>10.10.21.2</code> interface.</p>
+<p>An interpretation guide:</p>
+<div class="lesson-table-wrap"><table>
+<thead>
+<tr>
+<th>Observation</th>
+<th>First layer to investigate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No route from <code>ip route get</code></td>
+<td>Endpoint route or next hop</td>
+</tr>
+<tr>
+<td>TCP timeout</td>
+<td>Route, <code>FORWARD</code> drop, or missing return route</td>
+</tr>
+<tr>
+<td>Connection refused</td>
+<td>Host reached, but no listener accepted the port</td>
+</tr>
+<tr>
+<td>PostgreSQL password error</td>
+<td>TCP reached PostgreSQL; inspect credentials or <code>pg_hba.conf</code></td>
+</tr>
+<tr>
+<td>SQL permission error</td>
+<td>PostgreSQL authentication passed; inspect database privileges</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="checkpoint-definition-of-done">Checkpoint: Definition of Done</h3>
+<p>You are done when you can answer all of these:</p>
+<ol>
+<li>Why does <code>app-a-test</code> use <code>10.10.11.2</code> as its next hop?</li>
+<li>Why does the primary return through <code>10.10.21.2</code>?</li>
+<li>What does a successful <code>nc</code> prove, and what does it not prove?</li>
+<li>Where does the router's <code>FORWARD</code> rule run?</li>
+<li>Where does <code>pg_hba.conf</code> run?</li>
+<li>Why is <code>pg_is_in_recovery()</code> false on this service?</li>
+<li>Why do the replication settings exist before a replica exists?</li>
+</ol>
+<p>The progress checklist should be complete, both app TCP tests should succeed,
+and the SQL write should succeed.</p>
+<h3 id="break-it">Break It</h3>
+<p>Remove only the primary's return route to <code>app_a</code>.</p>
+<p><strong>Predict:</strong> The app-to-primary request may reach the primary, but the reply
+will have no route back to <code>10.10.11.0/24</code>. The client-side TCP test should
+hang until its three-second timeout even though the router's forward rule is
+still present.</p>
+<p><strong>Run:</strong></p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 13 exec postgres-primary \
+  ip route delete 10.10.11.0/24 via 10.10.21.2
+
+bash scripts/compose-stage.sh 13 exec postgres-primary ip route
+
+bash scripts/compose-stage.sh 13 exec app-a-test \
+  sh -c 'nc -vz -w 3 10.10.21.20 5432 || true'
+</code></pre>
+<p><strong>Observe:</strong> The route to <code>10.10.11.0/24</code> should be absent. The client-side
+<code>nc</code> command should time out or otherwise fail, while the router's permitted
+TCP counter may still show that the forward packet arrived.</p>
+<p><strong>Explain:</strong> A route in the forward direction is not enough for a TCP
+handshake. The primary's custom entrypoint installed the missing route during
+container creation, so recreation is the intended recovery rather than a
+manual host change.</p>
+<p><strong>Recover:</strong> Recreate only the primary. The named volume is not removed, so
+database contents remain available:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 13 up -d --force-recreate postgres-primary
+bash scripts/compose-stage.sh 13 exec postgres-primary \
+  ip route get 10.10.11.10
+bash scripts/compose-stage.sh 13 exec postgres-primary \
+  pg_isready -U labadmin -d labdb
+bash scripts/compose-stage.sh 13 exec app-a-test \
+  nc -vz -w 3 10.10.21.20 5432
+</code></pre>
+<h3 id="clean-up">Clean Up</h3>
+<p>Remove the containers and networks for this stage:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 13 down
+</code></pre>
+<p>Do not add <code>-v</code> unless you intentionally want to delete the named
+<code>postgres_primary_data</code> volume and repeat first-time initialization.</p>
+<h3 id="conclusion-next-chapter">Conclusion: Next Chapter</h3>
+<p>The primary chapter connected routing, firewalling, TCP, PostgreSQL host
+authentication, and SQL without treating them as one layer. The next chapter
+uses this same primary to inspect its OS process tree and to contrast PostgreSQL
+processes with shell job control.</p>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>What does nc prove, and what does it not prove?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → app-a-test</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 13 exec app-a-test nc -vz -w 3 10.10.21.20 5432</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 13 exec app-a-test nc -vz -w 3 10.10.21.20 5432">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>It proves a TCP handshake. It does not prove PostgreSQL authentication, pg_hba.conf acceptance, or SQL correctness.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="A TCP handshake proves transport reachability. PostgreSQL authentication, pg_hba.conf policy, database existence, and SQL correctness are later layers."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>`nc` successfully connects to TCP 5432. Does that prove PostgreSQL will accept the user and SQL query?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes</button><button type="button" data-question-choice="1">No</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="13" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>iptables decides whether the packet crosses; PostgreSQL decides whether the session is accepted.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/nginx-public-access/"><span>Chapter 12</span><strong>Nginx Public Access</strong><p>Put an application-layer reverse proxy on each public subnet and route its upstream request to the matching private app.</p></a><a href="/labs/docker-networking/postgres-process-model/"><span>Chapter 14</span><strong>PostgreSQL Processes and Job Control</strong><p>Connect the container PID 1 model to PostgreSQL main, background, and client backend processes.</p></a><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/postgres-process-model/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>

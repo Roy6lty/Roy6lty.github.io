@@ -1,0 +1,282 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="Understand how one database service becomes a coordinated process family and how shell job control differs from container persistence. Connect the container…"><meta name="theme-color" content="#101515"><title>PostgreSQL Process Model in Docker — Backends &amp; Job Control | Ayo Olowoleru</title><link rel="canonical" href="https://ayo-olowoleru.xyz/labs/docker-networking/postgres-process-model/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link href="/styles.css" rel="stylesheet"><link href="/labs/docker-networking/course.css" rel="stylesheet"><link href="/assets/favicon.svg" rel="icon"><meta property="og:title" content="PostgreSQL Process Model in Docker — Backends &amp; Job Control | Ayo Olowoleru"><meta property="og:description" content="Understand how one database service becomes a coordinated process family and how shell job control differs from container persistence. Connect the container…"><meta property="og:type" content="article"><meta property="og:url" content="https://ayo-olowoleru.xyz/labs/docker-networking/postgres-process-model/"><meta property="og:image" content="https://ayo-olowoleru.xyz/assets/docker-networking-social.jpg"><meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ayo-olowoleru.xyz/"},{"@type":"ListItem","position":2,"name":"Labs","item":"https://ayo-olowoleru.xyz/labs/"},{"@type":"ListItem","position":3,"name":"Docker Networking","item":"https://ayo-olowoleru.xyz/labs/docker-networking/"},{"@type":"ListItem","position":4,"name":"PostgreSQL Processes and Job Control","item":"https://ayo-olowoleru.xyz/labs/docker-networking/postgres-process-model/"}]}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"PostgreSQL Process Model in Docker — Backends & Job Control","description":"Understand how one database service becomes a coordinated process family and how shell job control differs from container persistence. Connect the container…","url":"https://ayo-olowoleru.xyz/labs/docker-networking/postgres-process-model/","author":{"@type":"Person","name":"Ayo Olowoleru","url":"https://ayo-olowoleru.xyz/about/"},"dateModified":"2026-09-05","learningResourceType":"Hands-on lab","about":["main server","client backend","background worker","Ctrl-Z / bg / fg"]}</script></head><body class="page-network-series"><a class="skip-link" href="#main-content">Skip to content</a><div class="site-frame"><header class="site-header"><a aria-label="Ayo Olowoleru home" class="brand" href="/"><span class="brand-mark">AO<span>/</span></span><span class="brand-copy"><strong>Ayo Olowoleru</strong><small>Backend &amp; systems engineer</small></span></a><button aria-controls="primary-nav" aria-expanded="false" class="menu-toggle" type="button"><span>Menu</span><i></i></button><nav aria-label="Primary navigation" class="primary-nav" id="primary-nav"><a href="/">Home</a><a href="/work/">Work</a><a href="/experience/">Experience</a><a href="/labs/" class="active" aria-current="page">Labs</a><a href="/about/">About</a><a class="nav-resume" href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume <span aria-hidden="true">↗</span></a><a class="nav-cta" href="/contact/">Let's talk <span aria-hidden="true">↗</span></a></nav></header><main id="main-content"><div class="chapter-page-header"><div class="series-breadcrumb"><a href="/labs/">Labs</a><span><a href="/labs/docker-networking/">Docker Networking</a></span><span>SERVICES</span><span>Chapter 14</span></div><div class="chapter-header-links"><a class="series-text-link" href="#full-notes">Full lesson notes ↓</a><a class="series-text-link" href="https://github.com/Roy6lty/Network-series/blob/main/chapters/14-postgres-process-model/README.md" target="_blank" rel="noreferrer">Source README ↗</a></div></div><section class="chapter-hero"><div><span class="chapter-hero-label">Chapter 14 / SERVICES</span><h1>PostgreSQL Processes and Job Control<br><em>Connect the container PID 1 model to PostgreSQL main, background, and client backend processes.</em></h1><p>Understand how one database service becomes a coordinated process family and how shell job control differs from container persistence.</p></div><div class="chapter-hero-index"><span>PROGRESSION</span><strong>14<small>/ 17</small></strong><p>Shell job control is not a replacement for a supervised container process.</p></div></section><div class="chapter-page-layout"><aside class="chapter-rail"><div class="chapter-rail-top"><a href="/labs/docker-networking/">Course map</a><span>14 / 17</span></div><div class="chapter-rail-progress"><span style="width:82.4%"></span></div><nav aria-label="Docker networking lab chapters"><p>Foundation</p><a class="chapter-rail-link" data-chapter-id="01" href="/labs/docker-networking/container-process/"><span>01</span><strong>Container Process Model</strong></a><a class="chapter-rail-link" data-chapter-id="02" href="/labs/docker-networking/cidr-bridges/"><span>02</span><strong>CIDR and Bridge Networks</strong></a><a class="chapter-rail-link" data-chapter-id="03" href="/labs/docker-networking/network-namespaces/"><span>03</span><strong>Network Namespaces and Interfaces</strong></a><a class="chapter-rail-link" data-chapter-id="04" href="/labs/docker-networking/capabilities/"><span>04</span><strong>Linux Capabilities</strong></a><p>Routing and packet flow</p><a class="chapter-rail-link" data-chapter-id="05" href="/labs/docker-networking/router-container/"><span>05</span><strong>Multi-Homed Router Container</strong></a><a class="chapter-rail-link" data-chapter-id="06" href="/labs/docker-networking/static-routing/"><span>06</span><strong>Static Routing</strong></a><a class="chapter-rail-link" data-chapter-id="07" href="/labs/docker-networking/packet-tracing/"><span>07</span><strong>Packet Tracing</strong></a><p>Traffic control and egress</p><a class="chapter-rail-link" data-chapter-id="08" href="/labs/docker-networking/iptables-firewall/"><span>08</span><strong>Stateful Firewalling</strong></a><a class="chapter-rail-link" data-chapter-id="09" href="/labs/docker-networking/private-networks/"><span>09</span><strong>Private Networks</strong></a><a class="chapter-rail-link" data-chapter-id="10" href="/labs/docker-networking/nat-gateway/"><span>10</span><strong>NAT Gateway</strong></a><a class="chapter-rail-link" data-chapter-id="11" href="/labs/docker-networking/docker-dns/"><span>11</span><strong>Docker DNS</strong></a><p>Service and data tier</p><a class="chapter-rail-link" data-chapter-id="12" href="/labs/docker-networking/nginx-public-access/"><span>12</span><strong>Nginx Public Access</strong></a><a class="chapter-rail-link" data-chapter-id="13" href="/labs/docker-networking/postgres-primary/"><span>13</span><strong>PostgreSQL Primary</strong></a><a class="chapter-rail-link is-current" data-chapter-id="14" href="/labs/docker-networking/postgres-process-model/"><span>14</span><strong>PostgreSQL Processes and Job Control</strong></a><a class="chapter-rail-link" data-chapter-id="15" href="/labs/docker-networking/physical-replication/"><span>15</span><strong>Physical Streaming Replication</strong></a><a class="chapter-rail-link" data-chapter-id="16" href="/labs/docker-networking/runtime-persistence/"><span>16</span><strong>Runtime Configuration Persistence</strong></a><p>Failure and cloud mapping</p><a class="chapter-rail-link" data-chapter-id="17" href="/labs/docker-networking/failure-testing/"><span>17</span><strong>Failure Testing and Cloud Mapping</strong></a><p>Optional</p><a class="chapter-rail-link" data-chapter-id="05B" href="/labs/docker-networking/routed-network-chain/"><span>05B</span><strong>Routed Network Chain</strong></a></nav><div class="chapter-rail-bottom"><span>source</span><a href="https://github.com/Roy6lty/Network-series/blob/main/chapters/14-postgres-process-model/README.md" target="_blank" rel="noreferrer">README ↗</a></div></aside><article class="chapter-main"><section class="chapter-local-notice"><div><span>RUN LOCALLY</span><strong>This page teaches and tracks progress. Commands run in your own Docker lab.</strong></div><code>bash scripts/compose-stage.sh 14 ...</code></section><section class="chapter-context"><div><span>What this stage changes</span><p>Adds no topology. The primary from chapter 13 is the process laboratory.</p></div><div><span>Lab state</span><p>PostgreSQL primary unchanged / process family and shell job-control inspection</p><div class="chapter-tags"><span>main server</span><span>client backend</span><span>background worker</span><span>Ctrl-Z / bg / fg</span></div></div></section><section class="chapter-loop-section"><div><span>Lesson route</span><strong>Shell job control is not a replacement for a supervised container process.</strong></div><div class="lesson-loop lesson-loop-compact"><span><b>01</b>Build</span><span><b>02</b>Run</span><span><b>03</b>Observe</span><span><b>04</b>Break</span><span><b>05</b>Explain</span><span><b>06</b>Fix</span><span><b>07</b>Retest</span><span><b>08</b>Questions</span></div></section><section class="chapter-diagram-section"><div class="chapter-section-heading"><div><span>01 / See the layer</span><h2>Locate the change<br><em>before you run it.</em></h2></div><p>The topology diagram is stored locally with the course and can be opened at full size.</p></div><div class="chapter-diagram-frame"><div class="chapter-diagram-meta"><span>chapters/14-postgres-process-model/diagram.svg</span><a href="/labs/docker-networking/diagrams/chapter-14.svg" target="_blank" rel="noreferrer">Open full diagram ↗</a></div><img src="/labs/docker-networking/diagrams/chapter-14.svg" alt="PostgreSQL Processes and Job Control topology diagram" loading="lazy"></div></section><section class="chapter-steps-section"><div class="chapter-section-heading"><div><span>02 / Guided run</span><h2>Run the minimum<br><em>diagnostic path.</em></h2></div><p>This short path gets you to the core observation. The complete chapter below retains the full task sequence and troubleshooting detail.</p></div><div class="chapter-step-list"><article class="chapter-step"><div class="chapter-step-number">01</div><div><span>Build / start</span><h3>List the PostgreSQL process family</h3><p>See the main server, checkpointer, WAL writer, autovacuum, and backend processes.</p><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-primary</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">02</div><div><span>Inspect / test</span><h3>Identify your SQL backend</h3><p>Ask PostgreSQL which operating-system process serves the current session.</p><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-primary</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 14 exec postgres-primary psql -U labadmin -d labdb -c &#x27;SELECT pg_backend_pid();&#x27;</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 14 exec postgres-primary psql -U labadmin -d labdb -c &#x27;SELECT pg_backend_pid();&#x27;">Copy</button></div></div></div></article><article class="chapter-step"><div class="chapter-step-number">03</div><div><span>Observe</span><h3>Practice shell job control</h3><p>Use a disposable shell for Ctrl-Z, bg, jobs, and fg. Do not background the database process itself.</p><div class="series-command"><div class="series-command-meta"><span>HOST → opens shell in postgres-primary</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 14 exec postgres-primary sh</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 14 exec postgres-primary sh">Copy</button></div></div></div></article></div></section><section class="chapter-break"><div><span>03 / Break and restore</span><h2>Make one thing<br><em>fail on purpose.</em></h2><p>Kill one client backend from a test connection and explain why the server remains healthy.</p></div><div class="break-command"><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-primary</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef">Copy</button></div></div><div><span>Restore</span><code>bash scripts/compose-stage.sh 14 up -d --force-recreate postgres-primary</code></div></div></section><section class="chapter-notes-section" id="full-notes"><div class="chapter-section-heading"><div><span>04 / Full lesson</span><h2>Keep the reasoning<br><em>and the rough edges.</em></h2></div><p>The maintained README is rendered directly into this page. The technical explanation is available even with JavaScript disabled.</p></div><nav class="chapter-on-page" aria-label="On this page"><span>In this chapter</span><a href="#key-concepts">Key Concepts</a><a href="#a-container-is-a-pid-namespace">A container is a PID namespace</a><a href="#postgresql-is-a-process-family">PostgreSQL is a process family</a><a href="#pid-and-job-id-are-different-identifiers">PID and job ID are different identifiers</a><a href="#goal">Goal</a><a href="#from-chapter-13">From Chapter 13</a><a href="#what-this-stage-adds">What This Stage Adds</a></nav><div class="lesson-notes" data-static-notes><h3 id="key-concepts">Key Concepts</h3>
+<h4 id="a-container-is-a-pid-namespace">A container is a PID namespace</h4>
+<p>The container has its own process view. The process at PID 1 is the container's
+main process, and its exit ends the container. In this stage, the custom
+PostgreSQL entrypoint eventually uses <code>exec</code> so the real PostgreSQL server is
+the supervised PID 1 process.</p>
+<pre><code class="language-text">container start
+    |
+    v
+primary-lab-entrypoint
+    |
+    v
+docker-entrypoint.sh
+    |
+    v
+postgres becomes PID 1
+</code></pre>
+<h4 id="postgresql-is-a-process-family">PostgreSQL is a process family</h4>
+<p>PostgreSQL uses a main server process plus separate OS processes for client
+backends and background work. The exact list can vary by PostgreSQL version and
+configuration, but it commonly includes:</p>
+<pre><code class="language-text">postgres                 main server
+postgres: checkpointer   background process
+postgres: walwriter      background process
+postgres: autovacuum     background process
+postgres: ...            one client backend per session
+</code></pre>
+<p><code>pg_backend_pid()</code> returns the OS PID of the backend serving the current SQL
+session. It is not necessarily the PID of the main server.</p>
+<h4 id="pid-and-job-id-are-different-identifiers">PID and job ID are different identifiers</h4>
+<p>An OS process has a PID such as <code>42</code>. A shell gives jobs a shell-local job ID
+such as <code>%1</code>.</p>
+<pre><code class="language-text">Ctrl-Z = ask the shell to suspend the foreground job
+bg     = ask the shell to resume that job in the background
+jobs   = list jobs known to this shell
+fg %1  = bring shell job 1 back to the foreground
+</code></pre>
+<p>Shell job control is not a container persistence mechanism. It does not replace
+PID 1 supervision, and it does not control PostgreSQL's internal backend and
+worker relationships.</p>
+<h3 id="goal">Goal</h3>
+<p>Connect the Chapter 01 container PID 1 model to the PostgreSQL primary. Inspect
+the server and backend processes, then practice <code>Ctrl-Z</code>, <code>bg</code>, <code>jobs</code>, and
+<code>fg</code> with a disposable shell job.</p>
+<p>By the end, you should be able to:</p>
+<ul>
+<li>identify the PostgreSQL process at container PID 1;</li>
+<li>relate <code>pg_backend_pid()</code> to a process in <code>ps -ef</code>;</li>
+<li>distinguish PostgreSQL background processes from shell jobs;</li>
+<li>explain why <code>exec</code> matters for container signal and exit handling;</li>
+<li>terminate one client backend without terminating the server.</li>
+</ul>
+<h3 id="from-chapter-13">From Chapter 13</h3>
+<p>Chapter 13 added <code>postgres-primary</code> at <code>10.10.21.20</code> and verified its routed
+TCP and SQL behavior. Chapter 14 adds no service, network, route, firewall rule,
+or Compose setting. It uses the running primary as a process laboratory.</p>
+<p>The same database remains the writable primary:</p>
+<pre><code class="language-text">postgres-primary
+    PID 1: PostgreSQL main server
+    TCP 5432
+    db_a: 10.10.21.20
+</code></pre>
+<p>The fact that a client can reach TCP 5432 is a network observation. The process
+tree below explains which PostgreSQL process handles that connection after it
+arrives.</p>
+<h3 id="what-this-stage-adds">What This Stage Adds</h3>
+<p>No topology change is introduced. This chapter adds a learner workflow for
+observing three existing boundaries:</p>
+<pre><code class="language-text">container lifecycle
+    |
+    v
+PostgreSQL PID 1 and child processes
+    |
+    v
+client backend for each SQL session
+
+separate shell
+    |
+    v
+job IDs and Ctrl-Z/bg/fg
+</code></pre>
+<p>The process observations are made inside <code>postgres-primary</code>. The job-control
+exercise uses a harmless <code>sleep</code> process and must not background the database
+server itself.</p>
+<h3 id="progress">Progress</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can show that PostgreSQL owns container PID 1.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can identify a client backend from <code>pg_backend_pid()</code> and <code>ps -ef</code>.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can distinguish a PID from a shell job ID.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can suspend, resume, and foreground a disposable shell job.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox"/>I can terminate one client backend while the primary stays available.</li>
+</ul>
+<h3 id="tasks">Tasks</h3>
+<h4 id="1-inspect-container-pid-1-and-the-postgresql-process-family">1. Inspect container PID 1 and the PostgreSQL process family</h4>
+<p><strong>Predict:</strong> PID 1 should be the PostgreSQL server rather than an unmanaged
+shell. <code>ps -ef</code> should show the main server and several PostgreSQL background
+processes.</p>
+<p><strong>Run:</strong></p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 14 up -d --build --wait
+bash scripts/compose-stage.sh 14 ps
+
+bash scripts/compose-stage.sh 14 exec postgres-primary \
+  ps -p 1 -o pid,ppid,stat,args
+
+bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef
+
+bash scripts/compose-stage.sh 14 exec postgres-primary \
+  sh -c 'tr "\\0" " " &lt;/proc/1/cmdline; printf "\\n"'
+</code></pre>
+<p><strong>Observe:</strong> PID 1 should be the PostgreSQL main server, with a command that
+includes the Compose settings such as <code>wal_level=replica</code>. <code>ps -ef</code> should show
+the main server, checkpointer, background writer or walwriter, autovacuum, and
+other PostgreSQL processes. The exact process names vary by image version.</p>
+<p><strong>Explain:</strong> The custom <code>lab-entrypoint.sh</code> sets routes and then executes the
+official PostgreSQL entrypoint. The official entrypoint eventually executes
+the requested <code>postgres</code> command. <code>exec</code> replaces wrappers instead of leaving
+an intermediate shell as PID 1, so signals and the server exit status reach the
+container lifecycle anchor.</p>
+<h4 id="2-match-a-sql-session-to-its-os-backend">2. Match a SQL session to its OS backend</h4>
+<p><strong>Predict:</strong> A live <code>psql</code> session should have a PostgreSQL backend process in
+the same container. Its PID should be different from the main server PID 1.</p>
+<p><strong>Run:</strong> Use two terminals. In terminal A, start an interactive SQL session:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 14 exec postgres-primary \
+  psql -U labadmin -d labdb
+</code></pre>
+<p>At the <code>psql</code> prompt, run this and record the number:</p>
+<pre><code class="language-sql">SELECT pg_backend_pid();
+</code></pre>
+<p>Leave the session open. In terminal B, inspect the process list:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef
+
+bash scripts/compose-stage.sh 14 exec postgres-primary \
+  psql -U labadmin -d labdb \
+  -c 'SELECT pid, backend_type, state FROM pg_stat_activity ORDER BY pid;'
+</code></pre>
+<p>Return to terminal A and exit <code>psql</code> with <code>\q</code>.</p>
+<p><strong>Observe:</strong> The PID returned by <code>pg_backend_pid()</code> should correspond to a
+<code>postgres: labadmin labdb ...</code> process in <code>ps -ef</code>. <code>pg_stat_activity</code> should
+show the session as a client backend while it exists. Once <code>\q</code> is entered,
+that backend should disappear.</p>
+<p><strong>Explain:</strong> PostgreSQL's main process accepts the connection and creates a
+backend process for the session. The backend is an OS process in the container
+PID namespace, while <code>pg_stat_activity</code> is PostgreSQL's view of the same
+session. This is a process relationship, not shell job control.</p>
+<h4 id="3-practice-job-control-with-a-disposable-process">3. Practice job control with a disposable process</h4>
+<p><strong>Predict:</strong> <code>Ctrl-Z</code> should stop a foreground <code>sleep</code>. <code>bg</code> should resume it
+as a background job, and <code>fg %1</code> should make it the foreground job again.
+None of these operations should change <code>postgres-primary</code> or its PID 1.</p>
+<p><strong>Run:</strong> Open a disposable shell in the primary container:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 14 exec postgres-primary bash
+</code></pre>
+<p>Inside that shell, run:</p>
+<pre><code class="language-bash">sleep 600
+</code></pre>
+<p>Press <code>Ctrl-Z</code>, then run:</p>
+<pre><code class="language-bash">jobs -l
+bg %1
+jobs -l
+fg %1
+</code></pre>
+<p>Press <code>Ctrl-C</code> to stop the foreground <code>sleep</code>, then leave the disposable shell:</p>
+<pre><code class="language-bash">exit
+</code></pre>
+<p><strong>Observe:</strong> After <code>Ctrl-Z</code>, the shell should show a stopped job. After <code>bg %1</code>, it should show a running background job. After <code>fg %1</code>, the terminal is
+again occupied by <code>sleep</code> until <code>Ctrl-C</code> stops it.</p>
+<p><strong>Explain:</strong> The shell tracks the job as <code>%1</code>, while the Linux kernel tracks
+the underlying <code>sleep</code> process with a PID. <code>Ctrl-Z</code> and <code>bg</code> affect the shell's
+foreground process group. They do not suspend or resume PostgreSQL's internal
+workers, and they do not make a process survive container shutdown.</p>
+<h3 id="expected-observations">Expected Observations</h3>
+<pre><code class="language-text">container PID 1
+        |
+        v
+postgres main server
+        |
+        +--&gt; checkpointer
+        +--&gt; walwriter
+        +--&gt; autovacuum
+        +--&gt; client backend for each SQL session
+</code></pre>
+<p>The identifiers have different scopes:</p>
+<div class="lesson-table-wrap"><table>
+<thead>
+<tr>
+<th>Identifier</th>
+<th>Owner</th>
+<th>Example</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PID</td>
+<td>Linux process namespace</td>
+<td><code>42</code></td>
+<td>An OS process identity.</td>
+</tr>
+<tr>
+<td><code>pg_backend_pid()</code></td>
+<td>PostgreSQL session</td>
+<td><code>42</code></td>
+<td>The backend serving one SQL session.</td>
+</tr>
+<tr>
+<td>Job ID</td>
+<td>Interactive shell</td>
+<td><code>%1</code></td>
+<td>A shell-local handle for a foreground/background job.</td>
+</tr>
+<tr>
+<td>Container PID 1</td>
+<td>Container runtime</td>
+<td><code>1</code></td>
+<td>The process whose exit ends the container.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The database can have many backend and worker PIDs while still having one
+container PID 1. A shell's job table is not PostgreSQL's process tree.</p>
+<h3 id="checkpoint-definition-of-done">Checkpoint: Definition of Done</h3>
+<p>You are done when you can answer all of these:</p>
+<ol>
+<li>Which process is container PID 1?</li>
+<li>What process does <code>pg_backend_pid()</code> identify?</li>
+<li>Why does one SQL session create a backend without replacing PID 1?</li>
+<li>What is the difference between PID <code>42</code> and shell job <code>%1</code>?</li>
+<li>What does <code>Ctrl-Z</code> do, and what does <code>bg</code> do?</li>
+<li>Why should the database server itself not be started as an unmanaged shell
+background job?</li>
+</ol>
+<p>The progress checklist should be complete, and the harmless <code>sleep</code> job should
+have been stopped before leaving its shell.</p>
+<h3 id="break-it">Break It</h3>
+<p>Terminate one client backend while leaving the PostgreSQL server and its
+background processes untouched.</p>
+<p>First ensure the SQL session from Task 2 is closed. Then use two terminals. In
+terminal A, open a new session and record its backend PID:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 14 exec postgres-primary \
+  psql -U labadmin -d labdb
+</code></pre>
+<p>At the prompt:</p>
+<pre><code class="language-sql">SELECT pg_backend_pid();
+</code></pre>
+<p>Leave <code>psql</code> open. In terminal B, replace <code>&lt;BACKEND_PID&gt;</code> with the number from
+terminal A and send that client process a termination signal:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 14 exec -T -u postgres postgres-primary \
+  kill -TERM &lt;BACKEND_PID&gt;
+</code></pre>
+<p><strong>Predict:</strong> Terminal A should report that the server closed the connection.
+PID 1 and PostgreSQL's background processes should remain alive, and a new SQL
+session should still work.</p>
+<p><strong>Observe:</strong> Check the process tree and reconnect:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 14 exec postgres-primary \
+  ps -p 1 -o pid,ppid,stat,args
+
+bash scripts/compose-stage.sh 14 exec postgres-primary \
+  psql -U labadmin -d labdb \
+  -c 'SELECT pg_is_in_recovery(), current_database();'
+</code></pre>
+<p>The first command should still show PostgreSQL at PID 1. The second should
+return <code>f</code> and <code>labdb</code>.</p>
+<p><strong>Explain:</strong> The killed process was one session backend, not the main server.
+The server supervises the process family and can accept another connection.
+This is different from using <code>Ctrl-Z</code>, which asks a shell to suspend a
+foreground job.</p>
+<p><strong>Recover:</strong> Exit any remaining interactive <code>psql</code> session with <code>\q</code>. No
+container recreation is required; opening a new session is the recovery for a
+terminated client backend.</p>
+<h3 id="clean-up">Clean Up</h3>
+<p>Remove the resources for this cumulative stage:</p>
+<pre><code class="language-bash">bash scripts/compose-stage.sh 14 down
+</code></pre>
+<p>The named PostgreSQL volume is retained by this command. Use <code>down -v</code> only
+when you intentionally want to delete the primary data and repeat first-time
+initialization.</p>
+<h3 id="conclusion-next-chapter">Conclusion: Next Chapter</h3>
+<p>The PostgreSQL server is the container's PID 1 process, while sessions and
+workers form a child process family. Shell job control is a separate interface
+for managing disposable foreground and background jobs. The next chapter adds
+<code>postgres-replica</code> and uses <code>pg_basebackup</code> plus WAL streaming to build a
+physical standby across the routed database networks.</p>
+</div></section><section class="chapter-checkpoint"><div class="chapter-section-heading"><div><span>05 / Review checkpoint</span><h2>Explain it<br><em>without the README.</em></h2></div><p>What happens if one client backend dies?</p></div><div class="checkpoint-grid"><div class="checkpoint-commands"><div class="series-command"><div class="series-command-meta"><span>HOST → postgres-primary</span><span>RUN LOCALLY</span></div><div class="series-command-body"><pre><code>bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef</code></pre><button type="button" data-copy-command="bash scripts/compose-stage.sh 14 exec postgres-primary ps -ef">Copy</button></div></div></div><div class="checkpoint-answer"><span>Do not reveal this first</span><p hidden data-checkpoint-answer>The PostgreSQL server and background processes remain alive. The client session is one process in a larger supervised service.</p><button type="button" class="checkpoint-reveal" data-reveal-checkpoint>Reveal expected observation</button></div></div></section><section class="chapter-predict" data-question-card data-answer-index="1" data-explanation="Client backends are members of a larger PostgreSQL process family. The main server and background processes continue serving other sessions."><div class="chapter-section-heading"><div><span>06 / Chapter questions</span><h2>Check the model<br><em>after the lab.</em></h2></div><p>Answer after completing the practical work. The question checks whether the mental model matches the evidence from your terminal.</p></div><div class="prediction-card"><p>If one PostgreSQL client backend process exits, should the entire PostgreSQL server stop?</p><div class="prediction-options"><button type="button" data-question-choice="0">Yes</button><button type="button" data-question-choice="1">No</button></div><div class="prediction-feedback" hidden aria-live="polite"></div><button type="button" class="checkpoint-complete question-complete" data-complete-chapter="14" disabled>Mark chapter complete</button></div></section><section class="chapter-takeaway"><span>Mental model to carry forward</span><strong>Shell job control is not a replacement for a supervised container process.</strong></section><section class="chapter-related"><div class="chapter-section-heading"><div><span>Keep connecting the model</span><h2>Related<br><em>chapters.</em></h2></div><p>These links connect the current layer to the concepts it depends on or unlocks next.</p></div><div class="chapter-related-grid"><a href="/labs/docker-networking/postgres-primary/"><span>Chapter 13</span><strong>PostgreSQL Primary</strong><p>Add a writable database to the database tier and validate the path at TCP, SQL, process, and authentication layers.</p></a><a href="/labs/docker-networking/physical-replication/"><span>Chapter 15</span><strong>Physical Streaming Replication</strong><p>Copy the primary cluster into a second database subnet, then observe WAL stream and replay on a read-only standby.</p></a><a href="/labs/docker-networking/container-process/"><span>Chapter 01</span><strong>Container Process Model</strong><p>Start with the smallest useful building block: a container whose lifetime is controlled by one process.</p></a></div></section><div class="chapter-bottom-nav"><div class="chapter-bottom-links"><a href="/labs/">← All labs</a><a href="/labs/docker-networking/">Course map</a></div><a class="series-button series-button-primary" href="/labs/docker-networking/physical-replication/">Continue to next chapter <span>→</span></a></div></article></div></main><footer class="site-footer"><div><span class="footer-mark">AO/</span><span>Designed and built by Ayo Olowoleru</span></div><div><a href="mailto:olowoleru06@gmail.com">olowoleru06@gmail.com</a><a href="https://github.com/Roy6lty" rel="noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a><a href="https://www.linkedin.com/in/ayo-olowoleru-a8ab7418a/" rel="noreferrer" target="_blank">LinkedIn ↗</a><a href="/assets/Ayo-Olowoleru-Resume.pdf" rel="noreferrer" target="_blank">Resume ↗</a><span class="footer-year">2026</span></div></footer></div><script src="/script.js"></script><script src="/labs/lab-progress.js"></script><script src="/labs/docker-networking/course.js"></script></body></html>
