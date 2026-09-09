@@ -789,6 +789,7 @@ h3 { line-height: 1.02; }
 .lab-glyph-distributed i:nth-child(1) { top: 0; left: 34px; }
 .lab-glyph-distributed i:nth-child(2) { bottom: 0; left: 0; }
 .lab-glyph-distributed i:nth-child(3) { right: 0; bottom: 0; }
+.lab-glyph-concurrency svg { display: block; width: 95px; height: 70px; }
 .lab-glyph-linux i:nth-child(1) { inset: 0; border-radius: 50%; }
 .lab-glyph-linux i:nth-child(2) { inset: 14px; border-radius: 50%; border-color: var(--orange); }
 .lab-glyph-linux i:nth-child(3) { top: 34px; right: -5px; left: -5px; border-color: var(--lime-dark); }
